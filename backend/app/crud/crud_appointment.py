@@ -3,14 +3,15 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.schemas.appointment import AppointmentCreate
 from datetime import datetime
-from dateutil import parser
+# from dateutil import parser # This import is no longer needed for parsing appointment_time
+
 
 # Función para crear una nueva cita
 async def create_appointment(db: AsyncIOMotorDatabase, appointment: AppointmentCreate, user_id: str):
     appointment_data = appointment.model_dump()
     
-    # Convertimos el string de la fecha a un objeto datetime antes de guardar
-    appointment_data["appointment_time"] = parser.isoparse(appointment.appointment_time)
+    # REMOVE OR COMMENT OUT THIS LINE if it still exists:
+    # appointment_data["appointment_time"] = parser.isoparse(appointment.appointment_time)
     
     # Añadimos los datos que genera el servidor
     appointment_data["user_id"] = user_id
