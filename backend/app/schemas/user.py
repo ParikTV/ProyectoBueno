@@ -5,7 +5,6 @@ from typing import Any
 from bson import ObjectId
 from datetime import datetime
 
-# --- ESTA ES LA CLASE QUE FALTABA ---
 # Validador personalizado para los ObjectId de MongoDB
 class PyObjectId(ObjectId):
     @classmethod
@@ -37,6 +36,7 @@ class UserInDB(UserBase):
     id: PyObjectId = Field(alias="_id")
     hashed_password: str
     created_at: datetime
+    is_admin: bool = False # AÑADIDO: Campo para indicar si el usuario es administrador
     
     class Config:
         populate_by_name = True
@@ -49,6 +49,7 @@ class UserResponse(BaseModel):
     full_name: str | None = None
     phone_number: str | None = None
     created_at: datetime
+    is_admin: bool = False # AÑADIDO: Campo para indicar si el usuario es administrador en la respuesta
 
     @field_validator("id", mode='before')
     @classmethod
