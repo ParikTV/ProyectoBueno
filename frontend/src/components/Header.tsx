@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import styles from '@/App.module.css';
+import styles from '@/styles/Header.module.css'; // <-- RUTA ACTUALIZADA
 import { Page } from '@/types';
 
 interface HeaderProps {
@@ -31,7 +31,7 @@ export const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
                     ) : (
                         <>
                             <button onClick={() => navigateTo('login')}>Iniciar Sesión</button>
-                            <button onClick={() => navigateTo('register')} className={styles.signUpButton}>Registrarse</button>
+                            <button onClick={() => navigateTo('register')} className={styles.buttonSignUp}>Registrarse</button>
                         </>
                     )}
                 </nav>

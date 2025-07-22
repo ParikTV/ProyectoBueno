@@ -1,16 +1,13 @@
 // src/App.tsx
 
 import React, { useState } from 'react';
-import styles from '@/App.module.css';
+import styles from '@/styles/App.module.css'; // <-- RUTA ACTUALIZADA
 
-// Importamos los componentes y páginas
 import { Header } from '@/components/Header';
 import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { ProfilePage } from '@/pages/ProfilePage';
-
-// Importamos nuestro tipo centralizado
 import { Page } from '@/types';
 
 export default function App() {
@@ -19,17 +16,11 @@ export default function App() {
 
     const renderPage = () => {
         switch (currentPage) {
-            case 'register':
-                return <RegisterPage navigateTo={navigateTo} />;
-            case 'login':
-                return <LoginPage navigateTo={navigateTo} />;
-            case 'profile':
-                return <ProfilePage />;
-            case 'appointments':
-                 return <div><h2>Mis Citas</h2><p>(Próximamente)</p></div>;
-            case 'home':
-            default:
-                return <HomePage />;
+            case 'register': return <RegisterPage navigateTo={navigateTo} />;
+            case 'login': return <LoginPage navigateTo={navigateTo} />;
+            case 'profile': return <ProfilePage />;
+            case 'appointments': return <div><h2>Mis Citas</h2><p>(Próximamente)</p></div>;
+            case 'home': default: return <HomePage />;
         }
     };
 

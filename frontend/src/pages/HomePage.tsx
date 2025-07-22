@@ -1,14 +1,13 @@
 // src/pages/HomePage.tsx
 
 import React, { useState } from 'react';
-import styles from '@/App.module.css';
+import styles from '@/styles/HomePage.module.css'; // <-- RUTA ACTUALIZADA
 import { SearchIcon, MapPinIcon } from '@/components/Icons';
 import { CategoryCard } from '@/components/CategoryCard';
 import { ListingCard } from '@/components/ListingCard';
 
-// Datos de prueba (podrían venir de una API más adelante)
 const categories = [ { name: 'Restaurantes', icon: '🍽️' }, { name: 'Barberías', icon: '💈' }, { name: 'Clínicas', icon: '⚕️' }, { name: 'Hoteles', icon: '🏨' }, ];
-const featuredListings = [ { id: 1, name: 'La Parrilla Argentina', category: 'Restaurante', rating: '4.8', location: 'San José, Costa Rica', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto=format&fit=crop' }, { id: 2, name: 'Barbería El Caballero', category: 'Barbería', rating: '4.9', location: 'Heredia, Costa Rica', image: 'https://images.unsplash.com/photo-1536520002442-39764a41e987?q=80&w=2070&auto=format&fit=crop' }];
+const featuredListings = [ { id: 1, name: 'La Parrilla Argentina', category: 'Restaurante', rating: '4.8', location: 'San José, Costa Rica', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto.format&fit=crop' }, { id: 2, name: 'Barbería El Caballero', category: 'Barbería', rating: '4.9', location: 'Heredia, Costa Rica', image: 'https://images.unsplash.com/photo-1536520002442-39764a41e987?q=80&w=2070&auto.format&fit=crop' }];
 
 export const HomePage: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState('');

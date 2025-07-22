@@ -1,0 +1,26 @@
+/* src/styles/App.module.css */
+
+.appContainer {
+  background-color: #f9fafb;
+  min-height: 100vh;
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+}
+
+.mainContent {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  width: 100%;
+  box-sizing: border-box;
+  flex-grow: 1;
+}
+
+.footer {
+  background-color: #1f2937;
+  color: white;
+  padding: 2rem 0;
+  text-align: center;
+  flex-shrink: 0;
+}

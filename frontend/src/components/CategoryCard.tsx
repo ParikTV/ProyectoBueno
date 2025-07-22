@@ -1,7 +1,7 @@
 // src/components/CategoryCard.tsx
 
 import React from 'react';
-import styles from '@/App.module.css';
+import styles from '@/styles/Cards.module.css'; // <-- RUTA ACTUALIZADA
 
 interface CategoryCardProps {
     icon: string;

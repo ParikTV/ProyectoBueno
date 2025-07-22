@@ -1,7 +1,8 @@
 // src/pages/RegisterPage.tsx
 
 import React, { useState } from 'react';
-import styles from '@/App.module.css';
+import commonStyles from '@/styles/Common.module.css'; // <-- RUTA ACTUALIZADA
+import pageStyles from '@/styles/AuthPage.module.css'; // <-- RUTA ACTUALIZADA
 import { API_BASE_URL } from '@/services/api';
 import { Page } from '@/types';
 
@@ -23,7 +24,6 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ navigateTo }) => {
         setSuccess(null);
         if (password !== confirmPassword) { setError('Las contraseñas no coinciden.'); return; }
         setIsLoading(true);
-
         try {
             const response = await fetch(`${API_BASE_URL}/users/`, {
                 method: 'POST',
@@ -42,16 +42,18 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ navigateTo }) => {
     };
 
     return (
-        <div className={styles.authPage}>
-            <div className={styles.authFormContainer}>
+        <div className={pageStyles.pageContainer}>
+            <div className={commonStyles.formContainer}>
                 <h2>Crear una Cuenta</h2>
                 <form onSubmit={handleSubmit}>
-                    <div className={styles.formGroup}><label htmlFor="email">Correo Electrónico</label><input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-                    <div className={styles.formGroup}><label htmlFor="password">Contraseña</label><input type="password" id="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
-                    <div className={styles.formGroup}><label htmlFor="confirmPassword">Confirmar Contraseña</label><input type="password" id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required /></div>
-                    <button type="submit" className={styles.submitButton} disabled={isLoading}>{isLoading ? 'Registrando...' : 'Crear Cuenta'}</button>
-                    {error && <p className={styles.errorMessage}>{error}</p>}
-                    {success && <p className={styles.successMessage}>{success}</p>}
+                    <div className={commonStyles.formGroup}><label htmlFor="email">Correo Electrónico</label><input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+                    <div className={commonStyles.formGroup}><label htmlFor="password">Contraseña</label><input type="password" id="password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required /></div>
+                    <div className={commonStyles.formGroup}><label htmlFor="confirmPassword">Confirmar Contraseña</label><input type="password" id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required /></div>
+                    <button type="submit" className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} disabled={isLoading}>
+                        {isLoading ? 'Registrando...' : 'Crear Cuenta'}
+                    </button>
+                    {error && <p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p>}
+                    {success && <p className={`${commonStyles.alert} ${commonStyles.alertSuccess}`}>{success}</p>}
                 </form>
             </div>
         </div>

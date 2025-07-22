@@ -1,7 +1,7 @@
 // src/components/ListingCard.tsx
 
 import React from 'react';
-import styles from '@/App.module.css';
+import styles from '@/styles/Cards.module.css'; // <-- RUTA ACTUALIZADA
 import { StarIcon } from './Icons';
 
 interface ListingCardProps {

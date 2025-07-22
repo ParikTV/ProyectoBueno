@@ -1,0 +1,91 @@
+/* src/styles/Cards.module.css */
+
+.categoryCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  cursor: pointer;
+  transition: box-shadow 0.3s;
+  border: 1px solid #f3f4f6;
+}
+.categoryCard:hover {
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+}
+
+.categoryCard .icon {
+  font-size: 2.25rem;
+  color: #4f46e5;
+  margin-bottom: 0.5rem;
+}
+
+.categoryCard .name {
+  font-weight: 600;
+  color: #374151;
+}
+
+.listingCard {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  overflow: hidden;
+  transition: transform 0.3s;
+  display: flex;
+  flex-direction: column;
+}
+.listingCard:hover {
+  transform: translateY(-4px);
+}
+
+.listingCard img {
+  width: 100%;
+  height: 12rem;
+  object-fit: cover;
+}
+
+.listingCardContent {
+  padding: 1rem;
+  flex-grow: 1;
+}
+
+.listingCardCategory {
+  font-size: 0.875rem;
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.listingCardName {
+  font-size: 1.125rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-top: 0.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.listingCardRating {
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.listingCardRating svg {
+  color: #f59e0b;
+}
+
+.listingCardRating span {
+  color: #4b5563;
+  font-weight: bold;
+  margin-left: 0.25rem;
+}
+
+.listingCardLocation {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+}

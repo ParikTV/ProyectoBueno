@@ -1,11 +1,20 @@
-/* Contenedor principal de la App */
+/* --- ESTILOS GLOBALES Y LAYOUT --- */
 .appContainer {
   background-color: #f9fafb;
   min-height: 100vh;
   font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Cabecera */
+.mainContent {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  flex-grow: 1;
+}
+
+/* --- CABECERA --- */
 .header {
   background-color: #4f46e5;
   color: white;
@@ -24,11 +33,11 @@
 .header h1 {
   font-size: 1.5rem;
   font-weight: bold;
-  cursor: pointer; /* Para que parezca clickeable */
+  cursor: pointer;
 }
 
-.navLinks a, .navLinks button {
-  margin-right: 1rem;
+.navLinks button {
+  margin-left: 1rem;
   transition: color 0.2s;
   text-decoration: none;
   color: white;
@@ -37,32 +46,155 @@
   cursor: pointer;
   font-size: 1rem;
 }
-.navLinks a:hover, .navLinks button:hover {
+.navLinks button:hover {
   color: #c7d2fe;
 }
 
-.navLinks .signUpButton {
+/* --- PIE DE PÁGINA --- */
+.footer {
+  background-color: #1f2937;
+  color: white;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+/* --- COMPONENTES REUTILIZABLES --- */
+
+/* Base para Botones */
+.button {
+  width: 100%;
+  font-weight: bold;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+.button:disabled {
+  background-color: #a5b4fc;
+  cursor: not-allowed;
+}
+
+/* Modificador de Botón Primario (morado) */
+.buttonPrimary {
+  background-color: #4f46e5;
+  color: white;
+}
+.buttonPrimary:hover:not(:disabled) {
+  background-color: #4338ca;
+}
+
+/* Modificador de Botón Secundario (blanco) */
+.buttonSecondary {
+  background-color: #f9fafb;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 1rem; /* Ajuste para botones más pequeños */
+}
+.buttonSecondary:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+/* Modificador para el botón de registro en la cabecera */
+.buttonSignUp {
   background-color: white;
   color: #4f46e5;
   font-weight: 600;
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
-  transition: background-color 0.2s;
-  text-decoration: none;
 }
-.navLinks .signUpButton:hover {
+.buttonSignUp:hover {
   background-color: #eef2ff;
   color: #4338ca;
 }
 
-/* Contenido Principal */
-.mainContent {
-  max-width: 1280px;
-  margin: 0 auto;
+/* Base para Mensajes de Alerta */
+.alert {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.alertError {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.alertSuccess {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+/* --- ESTILOS DE PÁGINAS Y SECCIONES --- */
+
+/* Contenedor genérico para páginas de Auth y Perfil */
+.pageContainer {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
   padding: 2rem 1rem;
 }
 
-/* Sección del Buscador */
+/* Contenedor para formularios */
+.formContainer {
+  background-color: white;
+  padding: 2.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.formContainer h2 {
+  text-align: center;
+  font-size: 1.875rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-top: 0;
+  margin-bottom: 2rem;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px #c7d2fe;
+}
+
+.formGroup input:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+/* --- ESTILOS DE LA PÁGINA PRINCIPAL (HOME) --- */
 .heroSection {
   text-align: center;
   background-color: white;
@@ -139,7 +271,6 @@
   background-color: #4338ca;
 }
 
-/* Secciones (Categorías y Destacados) */
 .section {
   margin-bottom: 3rem;
 }
@@ -163,7 +294,6 @@
   }
 }
 
-/* Tarjeta de Categoría */
 .categoryCard {
   display: flex;
   flex-direction: column;
@@ -192,7 +322,6 @@
   color: #374151;
 }
 
-/* Tarjeta de Listado */
 .listingCard {
   background-color: white;
   border-radius: 0.75rem;
@@ -255,131 +384,27 @@
   margin-top: 0.5rem;
 }
 
-/* --- ESTILOS PARA LA PÁGINA DE REGISTRO Y LOGIN --- */
-.authPage {
+/* --- ESTILOS DE LA PÁGINA DE PERFIL --- */
+.profileHeader {
   display: flex;
-  justify-content: center;
-  align-items: flex-start; /* Cambiado para que no se estire */
-  padding: 2rem 1rem;
-}
-
-.authFormContainer {
-  background-color: white;
-  padding: 2.5rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  width: 100%;
-  max-width: 400px;
-}
-
-.authFormContainer h2 {
-  text-align: center;
-  font-size: 1.875rem;
-  font-weight: bold;
-  color: #1f2937;
-  margin-bottom: 2rem;
-}
-
-.formGroup {
-  margin-bottom: 1.5rem;
-}
-
-.formGroup label {
-  display: block;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.5rem;
-}
-
-.formGroup input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  box-sizing: border-box; /* Añadido para consistencia */
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-
-.formGroup input:focus {
-  outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px #c7d2fe;
-}
-
-.submitButton {
-  width: 100%;
-  background-color: #4f46e5;
-  color: white;
-  font-weight: bold;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  border: none;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background-color 0.3s;
-}
-
-.submitButton:hover {
-  background-color: #4338ca;
-}
-
-.submitButton:disabled {
-  background-color: #a5b4fc;
-  cursor: not-allowed;
-}
-
-.errorMessage, .successMessage {
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  margin-top: 1rem;
-  text-align: center;
-}
-
-.errorMessage {
-  background-color: #fee2e2;
-  color: #b91c1c;
-}
-
-.successMessage {
-  background-color: #dcfce7;
-  color: #166534;
-}
-
-/* --- ESTILOS PARA LA PÁGINA DE PERFIL --- */
-.profilePage {
-  background-color: white;
-  padding: 2.5rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-  max-width: 700px;
-  margin: 0 auto;
-}
-
-.profilePage h2 {
-  font-size: 1.875rem;
-  font-weight: bold;
-  color: #1f2937;
-  margin-bottom: 2rem;
+  justify-content: space-between;
+  align-items: center;
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 1rem;
+  margin-bottom: 2rem;
 }
 
 .profileInfo p {
   font-size: 1.125rem;
   color: #374151;
   margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
 }
 
 .profileInfo strong {
   color: #1f2937;
-}
-
-/* Pie de página */
-.footer {
-  background-color: #1f2937;
-  color: white;
-  margin-top: 4rem;
-  padding: 2rem 0;
-  text-align: center;
+  display: inline-block;
+  width: 180px;
+  flex-shrink: 0;
 }

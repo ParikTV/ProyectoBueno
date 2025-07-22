@@ -1,0 +1,32 @@
+/* src/styles/ProfilePage.module.css */
+
+.pageContainer {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 2rem 1rem;
+}
+
+.profileHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+
+.profileInfo p {
+  font-size: 1.125rem;
+  color: #374151;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.profileInfo strong {
+  color: #1f2937;
+  display: inline-block;
+  width: 180px;
+  flex-shrink: 0;
+}

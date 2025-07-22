@@ -1,0 +1,111 @@
+/* src/styles/Common.module.css */
+/* Clases súper reutilizables para botones, alertas y formularios */
+
+/* --- BOTONES --- */
+.button {
+  width: 100%;
+  font-weight: bold;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+.button:disabled {
+  background-color: #a5b4fc;
+  cursor: not-allowed;
+}
+
+.buttonPrimary {
+  background-color: #4f46e5;
+  color: white;
+}
+.buttonPrimary:hover:not(:disabled) {
+  background-color: #4338ca;
+}
+
+.buttonSecondary {
+  background-color: #f9fafb;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 1rem;
+}
+.buttonSecondary:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+/* --- ALERTAS --- */
+.alert {
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+  text-align: center;
+}
+
+.alertError {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.alertSuccess {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+/* --- FORMULARIOS --- */
+.formContainer {
+  background-color: white;
+  padding: 2.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  width: 100%;
+  max-width: 400px;
+}
+
+.formContainer h2 {
+  text-align: center;
+  font-size: 1.875rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-top: 0;
+  margin-bottom: 2rem;
+}
+
+.formGroup {
+  margin-bottom: 1.5rem;
+}
+
+.formGroup label {
+  display: block;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 2px #c7d2fe;
+}
+
+.formGroup input:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+}
