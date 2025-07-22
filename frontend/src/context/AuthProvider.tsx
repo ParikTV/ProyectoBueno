@@ -1,7 +1,7 @@
 // src/context/AuthProvider.tsx
 
 import React, { useState, ReactNode } from 'react';
-import { AuthContext } from '@/context/AuthContext';
+import { AuthContext } from './AuthContext';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [token, setToken] = useState<string | null>(localStorage.getItem("servibook_token"));
@@ -19,6 +19,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return (
         <AuthContext.Provider value={{ token, login, logout }}>
             {children}
-        </AuthContext.Provider> // <-- ¡Aquí está la corrección!
+        </AuthContext.Provider>
     );
 };

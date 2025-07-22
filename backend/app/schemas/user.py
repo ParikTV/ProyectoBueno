@@ -1,41 +1,25 @@
 # app/schemas/user.py
 
-from pydantic import BaseModel, EmailStr, Field
-from bson import ObjectId
-from datetime import datetime
-
-class UserBase(BaseModel):
-    email: EmailStr
-    full_name: str | None = None
-    phone_number: str | None = None
-
-class UserCreate(UserBase):
-    password: str = Field(..., min_length=8)
-
-class UserUpdate(BaseModel):
-    full_name: str | None = None
-    phone_number: str | None = None
-
-# Este es el modelo público que enviamos como respuesta.
-class UserResponse(UserBase):
-    # Le decimos a Pydantic que el campo 'id' debe ser llenado
-    # con el valor del campo '_id' que viene de la base de datos.
-    id: str = Field(..., alias="_id")
-    created_at: datetime
-
-    class Config:
-        # Habilitamos el uso de alias (como '_id')
-        populate_by_name = True
-        # Permitimos que Pydantic maneje tipos que no son estándar, como ObjectId
-        arbitrary_types_allowed = True
-        # Le decimos cómo convertir un ObjectId a un string en la respuesta JSON final
-        json_encoders = {
-            ObjectId: str
-        }# app/schemas/user.py
-
 from pydantic import BaseModel, EmailStr, Field, field_validator
+from typing import Any
 from bson import ObjectId
 from datetime import datetime
+
+# --- ESTA ES LA CLASE QUE FALTABA ---
+# Validador personalizado para los ObjectId de MongoDB
+class PyObjectId(ObjectId):
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.validate
+    @classmethod
+    def validate(cls, v: Any, validation_info: Any) -> ObjectId:
+        if not ObjectId.is_valid(v):
+            raise ValueError("Invalid objectid")
+        return ObjectId(v)
+    @classmethod
+    def __get_pydantic_json_schema__(cls, field_schema: Any) -> dict:
+        field_schema.update(type="string")
+        return field_schema
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -49,16 +33,23 @@ class UserUpdate(BaseModel):
     full_name: str | None = None
     phone_number: str | None = None
 
-# Este es el modelo público que enviamos como respuesta.
-class UserResponse(UserBase):
-    # Le decimos a Pydantic que el campo 'id' debe ser llenado
-    # con el valor del campo '_id' que viene de la base de datos.
+class UserInDB(UserBase):
+    id: PyObjectId = Field(alias="_id")
+    hashed_password: str
+    created_at: datetime
+    
+    class Config:
+        populate_by_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
+class UserResponse(BaseModel):
     id: str = Field(..., alias="_id")
+    email: EmailStr
+    full_name: str | None = None
+    phone_number: str | None = None
     created_at: datetime
 
-    # --- LA SOLUCIÓN ESTÁ AQUÍ ---
-    # Este "validador" se ejecuta ANTES de la validación normal.
-    # Convierte el ObjectId a un string para que Pydantic esté contento.
     @field_validator("id", mode='before')
     @classmethod
     def convert_objectid_to_str(cls, v):
@@ -67,11 +58,6 @@ class UserResponse(UserBase):
         return v
 
     class Config:
-        # Habilitamos el uso de alias (como '_id')
         populate_by_name = True
-        # Permitimos que Pydantic maneje tipos que no son estándar, como ObjectId
         arbitrary_types_allowed = True
-        # Le decimos cómo convertir un ObjectId a un string en la respuesta JSON final
-        json_encoders = {
-            ObjectId: str
-        }
+        json_encoders = {ObjectId: str}

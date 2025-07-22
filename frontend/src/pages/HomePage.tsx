@@ -1,17 +1,74 @@
 // src/pages/HomePage.tsx
 
-import React, { useState } from 'react';
-import styles from '@/styles/HomePage.module.css'; // <-- RUTA ACTUALIZADA
+import React, { useState, useEffect } from 'react';
+import styles from '@/styles/HomePage.module.css';
+import commonStyles from '@/styles/Common.module.css';
 import { SearchIcon, MapPinIcon } from '@/components/Icons';
 import { CategoryCard } from '@/components/CategoryCard';
 import { ListingCard } from '@/components/ListingCard';
+import { Service } from '@/types';
+import { API_BASE_URL } from '@/services/api';
+import { useAuth } from '@/hooks/useAuth';
 
 const categories = [ { name: 'Restaurantes', icon: '🍽️' }, { name: 'Barberías', icon: '💈' }, { name: 'Clínicas', icon: '⚕️' }, { name: 'Hoteles', icon: '🏨' }, ];
-const featuredListings = [ { id: 1, name: 'La Parrilla Argentina', category: 'Restaurante', rating: '4.8', location: 'San José, Costa Rica', image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=1974&auto.format&fit=crop' }, { id: 2, name: 'Barbería El Caballero', category: 'Barbería', rating: '4.9', location: 'Heredia, Costa Rica', image: 'https://images.unsplash.com/photo-1536520002442-39764a41e987?q=80&w=2070&auto.format&fit=crop' }];
 
 export const HomePage: React.FC = () => {
+    const { token } = useAuth();
     const [searchTerm, setSearchTerm] = useState('');
     const [location, setLocation] = useState('');
+    
+    const [services, setServices] = useState<Service[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchServices = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/services/`);
+                if (!response.ok) throw new Error('No se pudieron cargar los servicios.');
+                const data: Service[] = await response.json();
+                setServices(data);
+            } catch (err: any) {
+                setError(err.message);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchServices();
+    }, []);
+
+    const handleBooking = async (serviceId: string) => {
+        if (!token) {
+            alert("Por favor, inicia sesión para poder reservar.");
+            return;
+        }
+        setBookingSuccess(null);
+        setError(null);
+        const appointmentTime = new Date();
+        appointmentTime.setDate(appointmentTime.getDate() + 1);
+        try {
+            const response = await fetch(`${API_BASE_URL}/appointments/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    service_id: serviceId,
+                    appointment_time: appointmentTime.toISOString(),
+                }),
+            });
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || "No se pudo crear la cita.");
+            }
+            setBookingSuccess("¡Cita reservada con éxito! Puedes verla en 'Mis Citas'.");
+            setTimeout(() => setBookingSuccess(null), 5000);
+        } catch (err: any) {
+            setError(err.message);
+        }
+    };
 
     return (
         <>
@@ -26,11 +83,27 @@ export const HomePage: React.FC = () => {
             </div>
             <section className={styles.section}>
                 <h3 className={styles.sectionTitle}>Explorar por categoría</h3>
-                <div className={styles.grid}>{categories.map((cat) => (<CategoryCard key={cat.name} icon={cat.icon} name={cat.name} />))}</div>
+                <div className={styles.grid}>
+                    {categories.map((cat) => (
+                        <CategoryCard key={cat.name} icon={cat.icon} name={cat.name} />
+                    ))}
+                </div>
             </section>
             <section className={styles.section}>
                 <h3 className={styles.sectionTitle}>Destacados cerca de ti</h3>
-                <div className={styles.grid}>{featuredListings.map((listing) => (<ListingCard key={listing.id} image={listing.image} category={listing.category} name={listing.name} rating={listing.rating} location={listing.location} />))}</div>
+                {bookingSuccess && <p className={`${commonStyles.alert} ${commonStyles.alertSuccess}`}>{bookingSuccess}</p>}
+                {error && <p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p>}
+                {isLoading && <p>Cargando servicios...</p>}
+                
+                <div className={styles.grid}>
+                    {services.map((service) => (
+                        <ListingCard 
+                            key={service.id} 
+                            service={service} 
+                            onBook={handleBooking} 
+                        />
+                    ))}
+                </div>
             </section>
         </>
     );

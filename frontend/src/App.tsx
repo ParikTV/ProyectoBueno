@@ -1,13 +1,14 @@
 // src/App.tsx
 
 import React, { useState } from 'react';
-import styles from '@/styles/App.module.css'; // <-- RUTA ACTUALIZADA
+import styles from '@/styles/App.module.css';
 
 import { Header } from '@/components/Header';
 import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { ProfilePage } from '@/pages/ProfilePage';
+import { AppointmentsPage } from '@/pages/AppointmentsPage'; // <-- NUEVA IMPORTACIÓN
 import { Page } from '@/types';
 
 export default function App() {
@@ -19,7 +20,7 @@ export default function App() {
             case 'register': return <RegisterPage navigateTo={navigateTo} />;
             case 'login': return <LoginPage navigateTo={navigateTo} />;
             case 'profile': return <ProfilePage />;
-            case 'appointments': return <div><h2>Mis Citas</h2><p>(Próximamente)</p></div>;
+            case 'appointments': return <AppointmentsPage />; // <-- RENDERIZAR NUEVA PÁGINA
             case 'home': default: return <HomePage />;
         }
     };
