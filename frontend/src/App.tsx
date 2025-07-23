@@ -11,13 +11,26 @@ import { ProfilePage } from '@/pages/ProfilePage';
 import { AppointmentsPage } from '@/pages/AppointmentsPage';
 import { AdminPage } from '@/pages/AdminPage';
 import { OwnerDashboardPage } from '@/pages/OwnerDashboardPage';
+import { BusinessDetailsPage } from '@/pages/BusinessDetailsPage'; // Se importa la nueva página
 import { Page } from '@/types';
 
-export type ExtendedPage = Page | 'ownerDashboard';
+// Se añade 'businessDetails' a los tipos de página posibles
+export type ExtendedPage = Page | 'ownerDashboard' | 'businessDetails';
 
 export default function App() {
     const [currentPage, setCurrentPage] = useState<ExtendedPage>('home');
-    const navigateTo = (page: ExtendedPage) => setCurrentPage(page);
+    // Nuevo estado para guardar el ID del negocio que el usuario quiere ver
+    const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
+
+    // La función de navegación ahora puede aceptar un ID de negocio
+    const navigateTo = (page: ExtendedPage, businessId?: string) => {
+        if (page === 'businessDetails' && businessId) {
+            setSelectedBusinessId(businessId);
+        } else {
+            setSelectedBusinessId(null); // Limpiar el ID si no es la página de detalles
+        }
+        setCurrentPage(page);
+    };
 
     const renderPage = () => {
         switch (currentPage) {
@@ -27,10 +40,17 @@ export default function App() {
             case 'appointments': return <AppointmentsPage />;
             case 'admin': return <AdminPage />;
             case 'ownerDashboard': return <OwnerDashboardPage />;
+            
+            // Nuevo caso para renderizar la página de detalles
+            case 'businessDetails':
+                if (!selectedBusinessId) {
+                    // Si no hay un ID, vuelve al inicio para evitar errores
+                    return <HomePage navigateTo={navigateTo} />;
+                }
+                return <BusinessDetailsPage businessId={selectedBusinessId} navigateTo={navigateTo} />;
+
             case 'home': 
             default: 
-                // --- CAMBIO AQUÍ ---
-                // Se pasa la función navigateTo como prop a HomePage
                 return <HomePage navigateTo={navigateTo} />;
         }
     };

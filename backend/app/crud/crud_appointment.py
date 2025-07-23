@@ -1,28 +1,25 @@
 # app/crud/crud_appointment.py
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from app.schemas.appointment import AppointmentCreate
+from app.schemas.appointment import AppointmentCreate # Asegúrate que importe el AppointmentCreate actualizado
+from bson import ObjectId
 from datetime import datetime
-# from dateutil import parser # This import is no longer needed for parsing appointment_time
 
-
-# Función para crear una nueva cita
 async def create_appointment(db: AsyncIOMotorDatabase, appointment: AppointmentCreate, user_id: str):
+    # La validación y conversión de la fecha ya ocurrió en el esquema,
+    # así que aquí 'appointment.appointment_time' ya es un objeto datetime.
     appointment_data = appointment.model_dump()
     
-    # REMOVE OR COMMENT OUT THIS LINE if it still exists:
-    # appointment_data["appointment_time"] = parser.isoparse(appointment.appointment_time)
-    
-    # Añadimos los datos que genera el servidor
-    appointment_data["user_id"] = user_id
+    appointment_data["user_id"] = ObjectId(user_id)
+    appointment_data["service_id"] = ObjectId(appointment.service_id)
+    appointment_data["status"] = "confirmed"
     appointment_data["created_at"] = datetime.utcnow()
-    appointment_data["status"] = "confirmada"
     
     result = await db["appointments"].insert_one(appointment_data)
-    created_appointment = await db["appointments"].find_one({"_id": result.inserted_id})
-    return created_appointment
+    return await db["appointments"].find_one({"_id": result.inserted_id})
 
-# Función para obtener las citas de un usuario específico
-async def get_appointments_by_user(db: AsyncIOMotorDatabase, user_id: str):
-    appointments = await db["appointments"].find({"user_id": user_id}).to_list(100)
-    return appointments
+async def get_appointments_by_user_id(db: AsyncIOMotorDatabase, user_id: str):
+    return await db["appointments"].find({"user_id": ObjectId(user_id)}).to_list(100)
+
+async def get_appointments_by_business_id(db: AsyncIOMotorDatabase, business_id: str):
+    return await db["appointments"].find({"service_id": ObjectId(business_id)}).to_list(1000)

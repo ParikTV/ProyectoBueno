@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.db.session import get_database
 from app.schemas.user import UserResponse
+from app.crud.crud_business import get_business_by_id # <-- AÑADIR
 from app.schemas.business import BusinessBase, BusinessResponse, BusinessUpdate
 from app.crud.crud_business import (
     create_business, 
@@ -75,3 +76,17 @@ async def publish_my_business(
     # Obtenemos la versión actualizada para devolverla
     updated_business = await get_business_by_owner_id(db, owner.id)
     return BusinessResponse.model_validate(updated_business)
+
+# --- NUEVO ENDPOINT ---
+@router.get("/{business_id}", response_model=BusinessResponse)
+async def get_business_details(
+    business_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_database)
+):
+    """
+    Obtiene los detalles públicos de un negocio específico por su ID.
+    """
+    business = await get_business_by_id(db, business_id)
+    if not business or business.get("status") != "published":
+        raise HTTPException(status_code=404, detail="Negocio no encontrado o no disponible.")
+    return BusinessResponse.model_validate(business)
