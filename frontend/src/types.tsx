@@ -1,11 +1,17 @@
-// src/types.ts
+// src/types.tsx
 
 export type Page = 'home' | 'register' | 'login' | 'profile' | 'appointments' | 'admin';
+
+// NUEVO: Tipo para una Categoría
+export interface Category {
+    id: number;
+    name: string;
+}
 
 // Tipo para un Servicio
 export interface Service {
     id: string;
-    _id?: string; // AÑADIDO: Añadir _id como opcional, ya que a veces viene del backend
+    _id?: string; 
     name: string;
     category: string;
     location: string;
@@ -17,7 +23,7 @@ export interface Appointment {
     id: string;
     service_id: string;
     user_id: string;
-    appointment_time: string; // Usamos string por simplicidad en el frontend
+    appointment_time: string; 
     status: string;
     created_at: string;
 }
@@ -29,7 +35,7 @@ export interface UserResponse {
     full_name?: string;
     phone_number?: string;
     created_at: string;
-    is_admin?: boolean; // Indica si el usuario es administrador
+    is_admin?: boolean; 
 }
 
 // Tipo para los datos del formulario de servicio
