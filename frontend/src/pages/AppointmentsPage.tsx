@@ -1,40 +1,47 @@
 // src/pages/AppointmentsPage.tsx
 
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth'; //
-import styles from '@/styles/AppointmentsPage.module.css'; //
-import commonStyles from '@/styles/Common.module.css'; //
-import { API_BASE_URL } from '@/services/api'; //
-import { Appointment, Service } from '@/types'; //
+import { useAuth } from '@/hooks/useAuth';
+import styles from '@/styles/AppointmentsPage.module.css';
+import commonStyles from '@/styles/Common.module.css';
+import { API_BASE_URL } from '@/services/api';
+import { Appointment, Business } from '@/types'; // CAMBIO: Importamos Business en lugar de Service
 
-// Un componente pequeño para mostrar los detalles de una cita
-const AppointmentCard: React.FC<{ appointment: Appointment, service?: Service }> = ({ appointment, service }) => {
+// --- Componente de la tarjeta de cita (actualizado) ---
+const AppointmentCard: React.FC<{ appointment: Appointment, business?: Business }> = ({ appointment, business }) => {
     const appointmentDate = new Date(appointment.appointment_time);
     
+    // Unimos las categorías del negocio en un solo string
+    const displayCategories = business?.categories.join(', ') || 'N/A';
+
     return (
-        <div className={styles.appointmentCard}> {/* */}
-            <div className={styles.serviceInfo}> {/* */}
-                <h3>{service?.name || 'Servicio Desconocido'}</h3>
-                <p>{service?.location || 'Ubicación no disponible'}</p>
-                <p>Categoría: {service?.category || 'N/A'}</p>
+        <div className={styles.appointmentCard}>
+            <div className={styles.serviceInfo}>
+                <h3>{business?.name || 'Negocio Desconocido'}</h3>
+                {/* CAMBIO: Usamos 'address' en lugar de 'location' */}
+                <p>{business?.address || 'Ubicación no disponible'}</p>
+                {/* CAMBIO: Mostramos las categorías del negocio */}
+                <p>Categoría: {displayCategories}</p>
             </div>
-            <div className={styles.appointmentDetails}> {/* */}
-                <strong>{appointmentDate.toLocaleDateString('es-CR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>
-                <span>{appointmentDate.toLocaleTimeString('es-CR', { hour: '2-digit', minute: '2-digit' })}</span>
+            <div className={styles.appointmentDetails}>
+                <strong>{appointmentDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+                <span>{appointmentDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
         </div>
     );
 };
 
+// --- Componente principal de la página (actualizado) ---
 export const AppointmentsPage: React.FC = () => {
-    const { token, logout } = useAuth(); //
-    const [appointments, setAppointments] = useState<Appointment[]>([]); //
-    const [services, setServices] = useState<Record<string, Service>>({}); //
+    const { token, logout } = useAuth();
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    // CAMBIO: El estado ahora almacena un mapa de Negocios (Business)
+    const [businesses, setBusinesses] = useState<Record<string, Business>>({});
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        const fetchAppointmentsAndServices = async () => {
+        const fetchAppointmentsAndBusinesses = async () => {
             if (!token) {
                 setError("No estás autenticado.");
                 setIsLoading(false);
@@ -42,33 +49,32 @@ export const AppointmentsPage: React.FC = () => {
             }
             try {
                 // 1. Obtener todas las citas del usuario
-                const appointmentsResponse = await fetch(`${API_BASE_URL}/appointments/me`, { //
+                const appointmentsResponse = await fetch(`${API_BASE_URL}/appointments/me`, {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
                 if (!appointmentsResponse.ok) {
                     if (appointmentsResponse.status === 401) logout();
                     throw new Error("No se pudieron cargar tus citas.");
                 }
-                const appointmentsData: Appointment[] = await appointmentsResponse.json(); //
+                const appointmentsData: Appointment[] = await appointmentsResponse.json();
                 setAppointments(appointmentsData);
 
-                // 2. Obtener todos los servicios para poder mostrar sus detalles
-                const servicesResponse = await fetch(`${API_BASE_URL}/services/`, { //
-                    headers: { 'Authorization': `Bearer ${token}` } // Añadir token también a esta petición
-                });
-                if (!servicesResponse.ok) throw new Error("No se pudieron cargar los detalles de los servicios.");
-                const servicesData: Service[] = await servicesResponse.json(); //
+                // 2. Obtener todos los negocios publicados para poder mostrar sus detalles
+                const businessesResponse = await fetch(`${API_BASE_URL}/services/`);
+                if (!businessesResponse.ok) throw new Error("No se pudieron cargar los detalles de los negocios.");
                 
-                // Convertir la lista de servicios en un objeto para fácil acceso
-                // CAMBIO AQUÍ: Usar service._id como fallback para la clave del mapa
-                const servicesMap = servicesData.reduce((acc, service) => {
-                    const serviceKey = service.id || service._id; // Usar id o _id para la clave
-                    if (serviceKey) { // Asegurarse de que la clave exista
-                        acc[serviceKey] = service;
+                // CAMBIO: Los datos ahora son de tipo Business
+                const businessesData: Business[] = await businessesResponse.json();
+                
+                // Convertimos la lista de negocios en un objeto para fácil acceso
+                const businessesMap = businessesData.reduce((acc, business) => {
+                    const businessKey = business.id;
+                    if (businessKey) {
+                        acc[businessKey] = business;
                     }
                     return acc;
-                }, {} as Record<string, Service>); //
-                setServices(servicesMap);
+                }, {} as Record<string, Business>);
+                setBusinesses(businessesMap);
 
             } catch (err: any) {
                 setError(err.message);
@@ -77,28 +83,27 @@ export const AppointmentsPage: React.FC = () => {
             }
         };
 
-        fetchAppointmentsAndServices();
+        fetchAppointmentsAndBusinesses();
     }, [token, logout]);
 
-    if (isLoading) return <div className={styles.pageContainer}><p>Cargando tus citas...</p></div>; //
-    if (error) return <div className={styles.pageContainer}><p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p></div>; //
+    if (isLoading) return <div className={styles.pageContainer}><p>Cargando tus citas...</p></div>;
+    if (error) return <div className={styles.pageContainer}><p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p></div>;
 
     return (
-        <div className={styles.pageContainer}> {/* */}
-            <h2 className={styles.pageHeader}>Mis Citas</h2> {/* */}
+        <div className={styles.pageContainer}>
+            <h2 className={styles.pageHeader}>Mis Citas</h2>
             {appointments.length > 0 ? (
-                <div className={styles.appointmentList}> {/* */}
+                <div className={styles.appointmentList}>
                     {appointments.map(app => {
-                        // CAMBIO AQUÍ: Buscar el servicio usando el service_id de la cita
-                        // Si app.service_id es _id, debería coincidir con la clave del mapa
-                        const serviceToShow = services[app.service_id];
+                        // Buscamos el negocio correspondiente a la cita en nuestro mapa
+                        const businessToShow = businesses[app.service_id];
                         return (
-                            <AppointmentCard key={app.id} appointment={app} service={serviceToShow} />
+                            <AppointmentCard key={app.id} appointment={app} business={businessToShow} />
                         );
                     })}
                 </div>
             ) : (
-                <div className={styles.noAppointments}> {/* */}
+                <div className={styles.noAppointments}>
                     <p>Aún no tienes ninguna cita reservada.</p>
                 </div>
             )}

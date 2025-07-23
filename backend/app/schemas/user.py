@@ -1,9 +1,12 @@
 # app/schemas/user.py
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from typing import Any
+from typing import Any, Literal
 from bson import ObjectId
 from datetime import datetime
+
+# --- LÍNEA INCORRECTA ELIMINADA ---
+# Se eliminó la línea que causaba la importación circular.
 
 # Validador personalizado para los ObjectId de MongoDB
 class PyObjectId(ObjectId):
@@ -32,12 +35,18 @@ class UserUpdate(BaseModel):
     full_name: str | None = None
     phone_number: str | None = None
 
+class OwnerRequest(BaseModel):
+    business_name: str
+    business_description: str
+    status: Literal["pending", "approved", "rejected"] = "pending"
+
 class UserInDB(UserBase):
     id: PyObjectId = Field(alias="_id")
     hashed_password: str
     created_at: datetime
-    is_admin: bool = False # AÑADIDO: Campo para indicar si el usuario es administrador
-    
+    role: Literal["usuario", "dueño", "admin"] = "usuario"
+    owner_request: OwnerRequest | None = None
+
     class Config:
         populate_by_name = True
         arbitrary_types_allowed = True
@@ -49,11 +58,12 @@ class UserResponse(BaseModel):
     full_name: str | None = None
     phone_number: str | None = None
     created_at: datetime
-    is_admin: bool = False # AÑADIDO: Campo para indicar si el usuario es administrador en la respuesta
+    role: Literal["usuario", "dueño", "admin"]
+    owner_request: OwnerRequest | None = None
 
     @field_validator("id", mode='before')
     @classmethod
-    def convert_objectid_to_str(cls, v):
+    def convert_objectid_to_str(cls, v: Any) -> str:
         if isinstance(v, ObjectId):
             return str(v)
         return v

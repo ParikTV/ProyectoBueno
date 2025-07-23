@@ -2,13 +2,12 @@
 
 export type Page = 'home' | 'register' | 'login' | 'profile' | 'appointments' | 'admin';
 
-// NUEVO: Tipo para una Categoría
 export interface Category {
-    id: number;
+    id: string; // Es mejor usar string para los IDs de MongoDB
+    _id?: string;
     name: string;
 }
 
-// Tipo para un Servicio
 export interface Service {
     id: string;
     _id?: string; 
@@ -18,7 +17,6 @@ export interface Service {
     image_url: string | null;
 }
 
-// Tipo para una Cita
 export interface Appointment {
     id: string;
     service_id: string;
@@ -28,20 +26,43 @@ export interface Appointment {
     created_at: string;
 }
 
-// Tipo para la respuesta de usuario, incluyendo si es admin
+export interface OwnerRequest {
+    business_name: string;
+    business_description: string;
+    status: 'pending' | 'approved' | 'rejected';
+}
+
 export interface UserResponse {
     id: string;
+    _id?: string;
     email: string;
     full_name?: string;
     phone_number?: string;
     created_at: string;
-    is_admin?: boolean; 
+    role: 'usuario' | 'dueño' | 'admin';
+    owner_request?: OwnerRequest;
 }
 
-// Tipo para los datos del formulario de servicio
-export interface ServiceFormInputs {
+// --- INTERFAZ DE BUSINESS ACTUALIZADA ---
+export interface Business {
+    id: string;
+    owner_id: string;
     name: string;
-    category: string;
-    location: string;
-    image_url: string;
+    description: string;
+    address: string;
+    logo_url?: string;
+    photos: string[];
+    categories: string[];
+    status: 'draft' | 'published';
+}
+
+export interface CategoryRequest {
+    id: string;
+    _id?: string;
+    owner_id: string;
+    category_name: string;
+    reason: string;
+    evidence_url?: string;
+    status: 'pending' | 'approved' | 'rejected';
+    created_at: string;
 }

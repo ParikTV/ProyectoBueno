@@ -1,45 +1,48 @@
 // src/components/ListingCard.tsx
 
 import React from 'react';
-import styles from '@/styles/Cards.module.css'; //
-import commonStyles from '@/styles/Common.module.css'; //
-import { StarIcon } from './Icons'; //
-import { Service } from '@/types'; //
+import styles from '@/styles/Cards.module.css';
+import commonStyles from '@/styles/Common.module.css';
+import { StarIcon } from './Icons';
+import { Business } from '@/types';
 
 interface ListingCardProps {
-    service: Service; //
-    onBook: (serviceId: string) => void;
+    business: Business;
+    onBook: (businessId: string) => void;
 }
 
-export const ListingCard: React.FC<ListingCardProps> = ({ service, onBook }) => {
-    const rating = (Math.random() * (5 - 4) + 4).toFixed(1);
+export const ListingCard: React.FC<ListingCardProps> = ({ business, onBook }) => {
+    // --- LÍNEA DE DEPURACIÓN ---
+    // Esta línea nos mostrará en la consola del navegador el objeto 'business' que llega aquí.
+    console.log("Datos recibidos por ListingCard:", business);
 
-    // Determinar qué ID usar: service.id o service._id
-    const serviceIdForBooking = service.id || service._id || '';
+    const displayImage = business.photos?.[0] || business.logo_url || 'https://placehold.co/400x300/e2e8f0/4a5568?text=Sin+Imagen';
+    const displayCategories = business.categories.join(', ');
 
     return (
-        <div className={styles.listingCard}> {/* */}
+        <div className={styles.listingCard}>
             <img 
-                src={service.image_url || 'https://placehold.co/400x300/e2e8f0/4a5568?text=Sin+Imagen'} 
-                alt={service.name} 
+                src={displayImage} 
+                alt={business.name} 
                 onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/400x300/e2e8f0/4a5568?text=Error'; }}
             />
-            <div className={styles.listingCardContent}> {/* */}
-                <p className={styles.listingCardCategory}>{service.category}</p> {/* */}
-                <h3 className={styles.listingCardName}>{service.name}</h3> {/* */}
-                <div className={styles.listingCardRating}> {/* */}
-                    <StarIcon /> {/* */}
-                    <span>{rating}</span>
+            <div className={styles.listingCardContent}>
+                <p className={styles.listingCardCategory}>{displayCategories || 'Sin categoría'}</p>
+                <h3 className={styles.listingCardName}>{business.name}</h3>
+                
+                <div className={styles.listingCardRating}>
+                    <StarIcon />
+                    <span>{(Math.random() * (5 - 4.2) + 4.2).toFixed(1)}</span>
                 </div>
-                <p className={styles.listingCardLocation}>{service.location}</p> {/* */}
-                <div className={commonStyles.actionButtons}> {/* */}
+                
+                <p className={styles.listingCardLocation}>{business.address}</p>
+                
+                <div className={commonStyles.actionButtons} style={{marginTop: 'auto', paddingTop: '1rem'}}>
                     <button
-                        // LÍNEA CORREGIDA: Elimina el ` {/* */}` de aquí. Debe terminar simplemente así:
                         className={`${commonStyles.button} ${commonStyles.buttonPrimary}`}
-                        // CAMBIO AQUÍ: Pasa serviceIdForBooking en lugar de service.id
-                        onClick={() => onBook(serviceIdForBooking)}
-                        // Puedes añadir una pequeña validación visual si el ID no es válido
-                        disabled={!serviceIdForBooking}
+                        onClick={() => onBook(business.id)}
+                        // El botón se deshabilita si business.id no existe o está vacío
+                        disabled={!business.id}
                     >
                         Reservar
                     </button>

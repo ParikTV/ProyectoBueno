@@ -1,15 +1,18 @@
 // src/context/AuthContext.tsx
 
 import { createContext } from 'react';
+import { UserResponse } from '@/types'; // Importamos el tipo de usuario
 
 // Definimos la "forma" de nuestro contexto
 export interface AuthContextType {
     token: string | null;
-    isAdmin: boolean; // AÑADIDO: Estado para saber si el usuario es admin
+    user: UserResponse | null;
+    isAdmin: boolean;
     login: (token: string) => void;
     logout: () => void;
-    checkAdminStatus: () => Promise<void>; // AÑADIDO: Función para verificar el estado de admin
+    // La función fetchUser no necesita argumentos, usará el token del contexto
+    fetchUser: () => Promise<void>; 
 }
 
-// Creamos y exportamos el contexto. Esta es la línea clave.
+// Creamos y exportamos el contexto
 export const AuthContext = createContext<AuthContextType | null>(null);

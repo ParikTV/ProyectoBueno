@@ -1,60 +1,71 @@
 // src/context/AuthProvider.tsx
 
-import React, { useState, ReactNode, useEffect } from 'react'; // Importamos useEffect
-import { AuthContext } from './AuthContext'; //
-import { API_BASE_URL } from '@/services/api'; // Importamos la URL base de la API
+import React, { useState, ReactNode, useEffect, useCallback } from 'react';
+import { AuthContext } from './AuthContext';
+import { API_BASE_URL } from '@/services/api';
+import { UserResponse } from '@/types';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [token, setToken] = useState<string | null>(localStorage.getItem("servibook_token"));
-    const [isAdmin, setIsAdmin] = useState<boolean>(false); // AÑADIDO: Nuevo estado para el rol de admin
+    const [token, setToken] = useState<string | null>(null);
+    const [user, setUser] = useState<UserResponse | null>(null);
+    const [isAdmin, setIsAdmin] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    // Función para verificar el estado de administrador del usuario
-    const checkAdminStatus = async () => {
-        if (!token) {
+    const fetchUser = useCallback(async () => {
+        const currentToken = localStorage.getItem("servibook_token");
+        if (!currentToken) {
+            setUser(null);
             setIsAdmin(false);
+            setIsLoading(false);
             return;
         }
+        
         try {
-            const response = await fetch(`${API_BASE_URL}/users/me`, { //
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                },
+            const response = await fetch(`${API_BASE_URL}/users/me`, {
+                headers: { 'Authorization': `Bearer ${currentToken}` },
             });
             if (response.ok) {
-                const data = await response.json();
-                setIsAdmin(data.is_admin || false); // Actualizar el estado isAdmin
+                const data: UserResponse = await response.json();
+                setUser(data);
+                setIsAdmin(data.role === 'admin');
             } else {
-                setIsAdmin(false);
-                // Si el token es inválido o expira, limpiarlo
-                if (response.status === 401) {
-                    logout();
-                }
+                logout();
             }
         } catch (error) {
-            console.error("Error al verificar el estado de administrador:", error);
-            setIsAdmin(false);
+            console.error("Error al obtener los datos del usuario:", error);
+            logout();
+        } finally {
+            setIsLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        checkAdminStatus(); // Verificar el estado de admin al cargar el componente o cambiar el token
-    }, [token]);
+        const initialToken = localStorage.getItem("servibook_token");
+        setToken(initialToken);
+        fetchUser();
+    }, [fetchUser]);
 
     const login = (newToken: string) => {
-        setToken(newToken);
         localStorage.setItem("servibook_token", newToken);
-        // Al iniciar sesión, inmediatamente verifica el rol de admin
-        checkAdminStatus(); 
+        setToken(newToken);
+        fetchUser(); 
     };
 
     const logout = () => {
-        setToken(null);
         localStorage.removeItem("servibook_token");
-        setIsAdmin(false); // Resetear el estado de admin al cerrar sesión
+        setToken(null);
+        setUser(null);
+        setIsAdmin(false);
     };
+    
+    if (isLoading) {
+        return <div style={{textAlign: 'center', padding: '3rem', fontSize: '1.2rem'}}>Cargando sesión...</div>;
+    }
 
+    // --- LÍNEA CORREGIDA ---
+    // Asegúrate de que aquí diga "AuthContext.Provider"
     return (
-        <AuthContext.Provider value={{ token, isAdmin, login, logout, checkAdminStatus }}>
+        <AuthContext.Provider value={{ token, user, isAdmin, login, logout, fetchUser }}>
             {children}
         </AuthContext.Provider>
     );
