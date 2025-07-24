@@ -1,7 +1,5 @@
-# app/crud/crud_business.py
-
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from app.schemas.business import BusinessUpdate
+from app.schemas.business import BusinessUpdate, Schedule
 from bson import ObjectId
 
 async def create_business(db: AsyncIOMotorDatabase, business_data: dict, owner_id: str):
@@ -51,3 +49,12 @@ async def publish_business(db: AsyncIOMotorDatabase, business_id: str, owner_id:
         return_document=True
     )
     return result
+
+async def update_business_schedule(db: AsyncIOMotorDatabase, business_id: str, schedule_in: Schedule):
+    """Actualiza solo el horario de un negocio."""
+    schedule_data = schedule_in.model_dump()
+    await db["businesses"].update_one(
+        {"_id": ObjectId(business_id)},
+        {"$set": {"schedule": schedule_data}}
+    )
+    return await db["businesses"].find_one({"_id": ObjectId(business_id)})

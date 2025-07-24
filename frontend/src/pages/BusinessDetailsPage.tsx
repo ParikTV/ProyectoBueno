@@ -8,51 +8,62 @@ import commonStyles from '@/styles/Common.module.css';
 import { useAuth } from '@/hooks/useAuth';
 import { ExtendedPage } from '@/App';
 
-// --- NUEVO MODAL DE RESERVA (BASADO EN TestBookingPage) ---
+// --- NUEVO MODAL DE RESERVA CON SELECTOR DE FECHA/HORA ---
 const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookingSuccess: () => void; }> = ({ business, onClose, onBookingSuccess }) => {
-    const { token, user } = useAuth();
-    const [appointmentTime, setAppointmentTime] = useState('');
+    const { token } = useAuth();
+    const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+    const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+    const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isLoadingSlots, setIsLoadingSlots] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchSlots = async () => {
+            if (!selectedDate || !business.id) return;
+            setIsLoadingSlots(true);
+            setSelectedSlot(null);
+            setError('');
+            try {
+                const res = await fetch(`${API_BASE_URL}/businesses/${business.id}/available-slots?date=${selectedDate}`);
+                if (!res.ok) throw new Error("No se pudo cargar la disponibilidad para este día.");
+                setAvailableSlots(await res.json());
+            } catch (err: any) {
+                setAvailableSlots([]);
+                setError(err.message);
+            } finally {
+                setIsLoadingSlots(false);
+            }
+        };
+        fetchSlots();
+    }, [selectedDate, business.id]);
 
     const handleBooking = async () => {
-        if (!appointmentTime) {
-            setError("Por favor, ingresa la fecha y hora.");
+        if (!selectedSlot) {
+            setError("Por favor, selecciona una hora.");
             return;
         }
-        if (!user) {
-            setError("Debes iniciar sesión para reservar.");
-            return;
-        }
-
         setIsLoading(true);
         setError('');
         setSuccess('');
 
         try {
-            const businessId = business.id || business._id;
-            if (!businessId) throw new Error("ID del negocio no válido.");
-
+            const appointmentTime = `${selectedDate}T${selectedSlot}:00`;
             const res = await fetch(`${API_BASE_URL}/appointments/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({
-                    business_id: businessId,
-                    appointment_time: appointmentTime
-                })
+                body: JSON.stringify({ business_id: business.id, appointment_time: appointmentTime })
             });
 
             if (!res.ok) {
                 const errData = await res.json();
-                const errorMessage = errData.detail?.[0]?.msg || JSON.stringify(errData.detail) || "No se pudo crear la cita.";
-                throw new Error(errorMessage);
+                throw new Error(errData.detail || "No se pudo crear la cita.");
             }
 
             const responseData = await res.json();
             setSuccess(`¡Cita reservada con éxito! ID: ${responseData.id || responseData._id}`);
             
-            // Esperar 2 segundos y luego cerrar y refrescar.
             setTimeout(() => {
                 onBookingSuccess();
                 onClose();
@@ -69,25 +80,33 @@ const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookin
         <div className={styles.modalBackdrop} onClick={onClose}>
             <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
                 <h2>Reservar en {business.name}</h2>
-                <p>Esta es una interfaz de reserva simplificada.</p>
-
                 {error && <p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p>}
                 {success && <p className={`${commonStyles.alert} ${commonStyles.alertSuccess}`}>{success}</p>}
-                
+
                 <div className={commonStyles.formGroup}>
-                    <label htmlFor="appointmentTime">Fecha y Hora (appointment_time)</label>
-                    <input 
-                        id="appointmentTime" 
-                        type="text" 
-                        value={appointmentTime} 
-                        onChange={e => setAppointmentTime(e.target.value)} 
-                        placeholder="Formato: YYYY-MM-DDTHH:MM:SS" 
-                    />
-                     <small>Ej: 2025-12-24T18:30:00</small>
+                    <label>1. Elige una fecha</label>
+                    <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} min={new Date().toISOString().split('T')[0]} style={{width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem'}}/>
                 </div>
 
-                <div className={commonStyles.actionButtons}>
-                    <button className={commonStyles.buttonPrimary} onClick={handleBooking} disabled={isLoading || !!success}>
+                <div className={commonStyles.formGroup}>
+                    <label>2. Elige una hora disponible</label>
+                    {isLoadingSlots ? <p>Cargando horarios...</p> : (
+                        <div className={styles.timeSlotsGrid}>
+                            {availableSlots.length > 0 ? (
+                                availableSlots.map(slot => (
+                                    <button key={slot} onClick={() => setSelectedSlot(slot)} className={`${styles.timeSlot} ${selectedSlot === slot ? styles.selected : ''}`}>
+                                        {slot}
+                                    </button>
+                                ))
+                            ) : (
+                                <p>No hay horarios disponibles para este día.</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                <div className={commonStyles.actionButtons} style={{marginTop: '2rem'}}>
+                    <button className={commonStyles.buttonPrimary} onClick={handleBooking} disabled={!selectedSlot || isLoading || !!success}>
                         {isLoading ? 'Confirmando...' : 'Confirmar Cita'}
                     </button>
                     <button className={commonStyles.buttonSecondary} onClick={onClose} disabled={isLoading}>
@@ -99,8 +118,7 @@ const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookin
     );
 };
 
-
-// --- COMPONENTE PRINCIPAL (SIN CAMBIOS EN SU LÓGICA) ---
+// --- COMPONENTE PRINCIPAL DE LA PÁGINA ---
 interface BusinessDetailsPageProps { 
     businessId: string; 
     navigateTo: (page: ExtendedPage) => void; 
@@ -130,16 +148,16 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
     if (isLoading) return <div style={{textAlign: 'center', padding: '2rem'}}>Cargando...</div>;
     if (!business) return <div style={{textAlign: 'center', padding: '2rem'}}>Negocio no encontrado.</div>;
     
+    // Deshabilitar botón de reserva si no hay horario configurado
+    const canBook = business.status === 'published' && !!business.schedule;
+
     return (
         <div className={styles.detailsContainer}>
             {showBookingModal && (
                 <BookingModal 
                     business={business} 
                     onClose={() => setShowBookingModal(false)} 
-                    onBookingSuccess={() => {
-                        // Opcional: podrías navegar a la página de "Mis Citas"
-                        navigateTo('appointments');
-                    }} 
+                    onBookingSuccess={() => navigateTo('appointments')} 
                 />
             )}
             <div className={styles.imageColumn}>
@@ -154,6 +172,8 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
                 <button 
                     className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} 
                     style={{width: 'auto'}} 
+                    disabled={!canBook}
+                    title={!canBook ? 'Este negocio no ha configurado su horario de citas' : 'Reservar una cita'}
                     onClick={() => { 
                         if (!token) { 
                             alert("Debes iniciar sesión para reservar."); 
@@ -163,7 +183,7 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
                         } 
                     }}
                 >
-                    Reservar ahora
+                    {canBook ? 'Reservar ahora' : 'Reservas no disponibles'}
                 </button>
             </div>
         </div>

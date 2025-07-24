@@ -2,6 +2,26 @@
 
 export type Page = 'home' | 'register' | 'login' | 'profile' | 'appointments' | 'admin';
 
+// --- NUEVAS INTERFACES PARA EL HORARIO ---
+export interface ScheduleDay {
+    is_active: boolean;
+    open_time: string;
+    close_time: string;
+    slot_duration_minutes: number;
+    capacity_per_slot: number;
+}
+
+export interface Schedule {
+    monday: ScheduleDay;
+    tuesday: ScheduleDay;
+    wednesday: ScheduleDay;
+    thursday: ScheduleDay;
+    friday: ScheduleDay;
+    saturday: ScheduleDay;
+    sunday: ScheduleDay;
+}
+
+// --- INTERFACES EXISTENTES ---
 export interface Category {
     id: string;
     _id?: string;
@@ -10,7 +30,7 @@ export interface Category {
 
 export interface Appointment {
     id: string;
-    business_id: string; // <--- CAMBIO AQUÍ
+    business_id: string;
     user_id: string;
     appointment_time: string; 
     status: string;
@@ -45,6 +65,7 @@ export interface Business {
     photos: string[];
     categories: string[];
     status: 'draft' | 'published';
+    schedule?: Schedule; // <-- AÑADIDO
 }
 
 export interface CategoryRequest {

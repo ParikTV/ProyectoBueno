@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { API_BASE_URL } from '@/services/api';
-import { Business, Category } from '@/types';
+import { Business, Category, Schedule, ScheduleDay } from '@/types';
 import commonStyles from '@/styles/Common.module.css';
 
 // --- Componente para registrar un NUEVO negocio ---
@@ -18,7 +18,6 @@ const BusinessRegistrationForm: React.FC<{ onSave: () => void; onCancel: () => v
         setError('');
         setIsLoading(true);
         try {
-            // Se envía a la API con las validaciones del backend
             const response = await fetch(`${API_BASE_URL}/businesses/my-business`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -26,7 +25,6 @@ const BusinessRegistrationForm: React.FC<{ onSave: () => void; onCancel: () => v
             });
             if (!response.ok) {
                 const errorData = await response.json();
-                // Muestra un error más detallado si la API lo envía
                 const detail = errorData.detail?.[0];
                 const errorMessage = detail ? `${detail.loc[1]}: ${detail.msg}` : (errorData.detail || "No se pudo registrar la empresa.");
                 throw new Error(errorMessage);
@@ -98,9 +96,7 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
         try {
             const businessId = business.id || business._id;
             if (!businessId) throw new Error("ID del negocio no encontrado.");
-            
             const updateData = { name: formData.name, description: formData.description, address: formData.address, photos: formData.photos, categories: formData.categories };
-            
             const response = await fetch(`${API_BASE_URL}/businesses/my-business/${businessId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -128,11 +124,88 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
                  <div className={commonStyles.formGroup}><label>Nombre de la Empresa (mín. 3)</label><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required /></div>
                 <div className={commonStyles.formGroup}><label>Dirección (mín. 5)</label><input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} required /></div>
                 <div className={commonStyles.formGroup}><label>Descripción (mín. 10)</label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} required style={{minHeight: '100px', width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', boxSizing: 'border-box'}} /></div>
-                <div className={commonStyles.formGroup}><label>Categorías</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}>
-                        {allCategories.map(cat => (<label key={cat.id || cat._id} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}><input type="checkbox" checked={formData.categories.includes(cat.name)} onChange={() => handleCategoryChange(cat.name)} />{cat.name}</label>))}
-                </div></div>
+                <div className={commonStyles.formGroup}><label>Categorías</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}>{allCategories.map(cat => (<label key={cat.id || cat._id} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}><input type="checkbox" checked={formData.categories.includes(cat.name)} onChange={() => handleCategoryChange(cat.name)} />{cat.name}</label>))}</div></div>
                 <div className={commonStyles.formGroup}><label>Fotos del Negocio</label><div style={{display: 'flex', gap: '10px'}}><input type="url" placeholder="https://ejemplo.com/foto.jpg" value={newPhotoUrl} onChange={e => setNewPhotoUrl(e.target.value)} style={{flexGrow: 1}}/><button type="button" className={commonStyles.buttonSecondary} onClick={handleAddPhoto} style={{width: 'auto'}}>Añadir</button></div><div style={{display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px'}}>{formData.photos.map((photo, index) => <img key={index} src={photo} alt={`Foto ${index + 1}`} style={{width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px'}}/>)}</div></div>
                 <div className={commonStyles.actionButtons}><button type="submit" className={commonStyles.buttonPrimary} disabled={isLoading}>{isLoading ? 'Guardando...' : 'Guardar Cambios'}</button><button type="button" className={commonStyles.buttonSecondary} onClick={onCancel}>Cancelar</button></div>
+            </form>
+        </div>
+    );
+};
+
+// --- NUEVO COMPONENTE: FORMULARIO DE HORARIO ---
+const ManageScheduleForm: React.FC<{ business: Business; onSave: () => void; onCancel: () => void; }> = ({ business, onSave, onCancel }) => {
+    const { token } = useAuth();
+    const [schedule, setSchedule] = useState<Schedule>(business.schedule || {
+        monday: { is_active: false, open_time: '09:00', close_time: '17:00', slot_duration_minutes: 30, capacity_per_slot: 1 },
+        tuesday: { is_active: false, open_time: '09:00', close_time: '17:00', slot_duration_minutes: 30, capacity_per_slot: 1 },
+        wednesday: { is_active: false, open_time: '09:00', close_time: '17:00', slot_duration_minutes: 30, capacity_per_slot: 1 },
+        thursday: { is_active: false, open_time: '09:00', close_time: '17:00', slot_duration_minutes: 30, capacity_per_slot: 1 },
+        friday: { is_active: false, open_time: '09:00', close_time: '17:00', slot_duration_minutes: 30, capacity_per_slot: 1 },
+        saturday: { is_active: false, open_time: '09:00', close_time: '17:00', slot_duration_minutes: 30, capacity_per_slot: 1 },
+        sunday: { is_active: false, open_time: '09:00', close_time: '17:00', slot_duration_minutes: 30, capacity_per_slot: 1 },
+    });
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleDayChange = (day: keyof Schedule, field: keyof ScheduleDay, value: any) => {
+        // Asegurarse de que los valores numéricos sean números
+        const numericFields = ['slot_duration_minutes', 'capacity_per_slot'];
+        const finalValue = numericFields.includes(field) ? parseInt(value, 10) : value;
+        
+        setSchedule(prev => ({
+            ...prev,
+            [day]: { ...prev[day], [field]: finalValue }
+        }));
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setError('');
+        try {
+            const businessId = business.id || business._id;
+            const res = await fetch(`${API_BASE_URL}/businesses/my-business/${businessId}/schedule`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify(schedule)
+            });
+            if (!res.ok) throw new Error((await res.json()).detail || "No se pudo guardar el horario.");
+            onSave();
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const dayNames: { [key: string]: string } = { monday: 'Lunes', tuesday: 'Martes', wednesday: 'Miércoles', thursday: 'Jueves', friday: 'Viernes', saturday: 'Sábado', sunday: 'Domingo' };
+
+    return (
+        <div className={commonStyles.formContainer} style={{maxWidth: '800px'}}>
+            <h2>Gestionar Horario de {business.name}</h2>
+            <p style={{textAlign: 'center', color: '#6b7280'}}>Define los días y horas que tu negocio está abierto, la duración de cada cita y cuántos clientes puedes atender a la vez.</p>
+            {error && <p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p>}
+            <form onSubmit={handleSubmit}>
+                <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '1rem', fontWeight: 'bold', color: '#374151', paddingBottom: '0.5rem', marginBottom: '1rem', borderBottom: '2px solid #f3f4f6'}}>
+                    <span>Día</span>
+                    <span>Apertura</span>
+                    <span>Cierre</span>
+                    <span>Duración (min)</span>
+                    <span>Cupos / Cita</span>
+                </div>
+                {Object.keys(dayNames).map(day => (
+                    <div key={day} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: '1rem', alignItems: 'center', marginBottom: '1rem' }}>
+                        <label style={{fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                            <input type="checkbox" checked={schedule[day as keyof Schedule].is_active} onChange={e => handleDayChange(day as keyof Schedule, 'is_active', e.target.checked)} style={{transform: 'scale(1.2)'}}/>
+                            {dayNames[day]}
+                        </label>
+                        <input type="time" value={schedule[day as keyof Schedule].open_time} onChange={e => handleDayChange(day as keyof Schedule, 'open_time', e.target.value)} disabled={!schedule[day as keyof Schedule].is_active} />
+                        <input type="time" value={schedule[day as keyof Schedule].close_time} onChange={e => handleDayChange(day as keyof Schedule, 'close_time', e.target.value)} disabled={!schedule[day as keyof Schedule].is_active} />
+                        <input type="number" min="1" value={schedule[day as keyof Schedule].slot_duration_minutes} onChange={e => handleDayChange(day as keyof Schedule, 'slot_duration_minutes', e.target.value)} disabled={!schedule[day as keyof Schedule].is_active} title="Duración (minutos)" />
+                        <input type="number" min="1" value={schedule[day as keyof Schedule].capacity_per_slot} onChange={e => handleDayChange(day as keyof Schedule, 'capacity_per_slot', e.target.value)} disabled={!schedule[day as keyof Schedule].is_active} title="Capacidad por turno" />
+                    </div>
+                ))}
+                <div className={commonStyles.actionButtons} style={{marginTop: '2rem'}}><button type="submit" className={commonStyles.buttonPrimary} disabled={isLoading}>{isLoading ? 'Guardando...' : 'Guardar Horario'}</button><button type="button" className={commonStyles.buttonSecondary} onClick={onCancel}>Cancelar</button></div>
             </form>
         </div>
     );
@@ -145,6 +218,7 @@ export const OwnerDashboardPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isEditing, setIsEditing] = useState<Business | null>(null);
     const [isRegistering, setIsRegistering] = useState(false);
+    const [managingScheduleFor, setManagingScheduleFor] = useState<Business | null>(null);
 
     const fetchBusinesses = async () => {
         if (!token) return;
@@ -168,11 +242,12 @@ export const OwnerDashboardPage: React.FC = () => {
         } catch (err: any) { alert(`Error al lanzar el servicio: ${err.message}`); }
     };
     
-    const handleFormClose = () => { setIsEditing(null); setIsRegistering(false); fetchBusinesses(); }
+    const handleFormClose = () => { setIsEditing(null); setIsRegistering(null); setManagingScheduleFor(null); fetchBusinesses(); }
 
     if (isLoading) return <div style={{textAlign: 'center', padding: '2rem'}}>Cargando panel de dueño...</div>;
     if (isRegistering) return <div style={{display: 'flex', justifyContent: 'center', padding: '1rem'}}><BusinessRegistrationForm onSave={handleFormClose} onCancel={() => setIsRegistering(false)} /></div>
     if (isEditing) return <div style={{display: 'flex', justifyContent: 'center', padding: '1rem'}}><BusinessEditForm business={isEditing} onSave={handleFormClose} onCancel={() => setIsEditing(null)} /></div>
+    if (managingScheduleFor) return <div style={{display: 'flex', justifyContent: 'center', padding: '1rem'}}><ManageScheduleForm business={managingScheduleFor} onSave={handleFormClose} onCancel={() => setManagingScheduleFor(null)} /></div>
     
     return (
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1rem' }}>
@@ -187,11 +262,10 @@ export const OwnerDashboardPage: React.FC = () => {
                             <div key={businessId} style={{backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.75rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap'}}>
                                <div>
                                     <h2 style={{marginTop: 0, marginBottom: '0.5rem'}}>{business.name}</h2>
-                                   <p style={{margin: 0, padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 'bold', display: 'inline-block', backgroundColor: business.status === 'published' ? '#dcfce7' : '#fffbeb', color: business.status === 'published' ? '#166534' : '#b45309'}}>
-                                        {business.status === 'published' ? 'PUBLICADO' : 'BORRADOR'}
-                                    </p>
+                                   <p style={{margin: 0, padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 'bold', display: 'inline-block', backgroundColor: business.status === 'published' ? '#dcfce7' : '#fffbeb', color: business.status === 'published' ? '#166534' : '#b45309'}}>{business.status === 'published' ? 'PUBLICADO' : 'BORRADOR'}</p>
                                </div>
-                               <div style={{ display: 'flex', gap: '1rem' }}>
+                               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                                    <button className={commonStyles.buttonSecondary} style={{width: 'auto', padding: '0.5rem 1rem'}} onClick={() => setManagingScheduleFor(business)}>🗓️ Horario</button>
                                     {business.status === 'draft' && (<button className={commonStyles.buttonPrimary} style={{width: 'auto', padding: '0.5rem 1rem'}} onClick={() => handleLaunch(businessId)}>🚀 Lanzar</button>)}
                                     <button className={commonStyles.buttonSecondary} style={{width: 'auto', padding: '0.5rem 1rem'}} onClick={() => setIsEditing(business)}>Editar</button>
                                </div>
