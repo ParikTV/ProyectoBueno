@@ -1,6 +1,7 @@
 # app/api/endpoints/services.py
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import List
 
@@ -13,19 +14,39 @@ from .users import get_current_admin_user
 
 router = APIRouter()
 
+# --- Endpoint público para ver todos los negocios publicados (CORREGIDO) ---
+@router.get("/")
+async def get_all_published_businesses(db: AsyncIOMotorDatabase = Depends(get_database)):
+    """
+    Obtiene una lista de todos los negocios publicados, asegurando que el formato
+    de la respuesta JSON sea siempre correcto para el frontend.
+    """
+    businesses_from_db = await crud_business.get_published_businesses(db)
+    
+    # Construimos la respuesta manualmente para garantizar que 'id' esté presente
+    response_data = []
+    for business in businesses_from_db:
+        response_data.append({
+            "id": str(business["_id"]),
+            "owner_id": str(business["owner_id"]),
+            "name": business.get("name", "Sin Nombre"),
+            "description": business.get("description", ""),
+            "address": business.get("address", "Sin Dirección"),
+            "photos": business.get("photos", []),
+            "categories": business.get("categories", []),
+            "status": business.get("status", "draft"),
+        })
+        
+    return JSONResponse(content=response_data)
+
+
 # --- Dependencia para Dueños ---
 async def get_current_owner_user(current_user: UserResponse = Depends(get_current_user)):
     if current_user.role not in ["dueño", "admin"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acción solo para dueños o administradores")
     return current_user
 
-# --- Endpoint público para ver todos los negocios publicados ---
-@router.get("/", response_model=List[BusinessResponse])
-async def get_all_published_businesses(db: AsyncIOMotorDatabase = Depends(get_database)):
-    businesses = await crud_business.get_published_businesses(db)
-    return [BusinessResponse.model_validate(b) for b in businesses]
-
-# --- Endpoint para Dueños autenticados ---
+# --- Endpoints para Dueños autenticados ---
 
 @router.get("/my-businesses", response_model=List[BusinessResponse])
 async def get_my_businesses(
@@ -47,7 +68,6 @@ async def register_new_business(
     new_business = await crud_business.create_business(db, business_data=business_dict, owner_id=owner.id)
     return BusinessResponse.model_validate(new_business)
 
-# --- Ruta para actualizar un negocio ---
 @router.put("/my-business/{business_id}", response_model=BusinessResponse)
 async def update_my_business(
     business_id: str,
@@ -62,7 +82,6 @@ async def update_my_business(
     updated_business = await crud_business.update_business(db, business_id, owner.id, business_in)
     return BusinessResponse.model_validate(updated_business)
 
-# --- Ruta para publicar/lanzar un negocio ---
 @router.post("/my-business/{business_id}/publish", response_model=BusinessResponse)
 async def publish_my_business(
     business_id: str,
@@ -78,7 +97,6 @@ async def publish_my_business(
         raise HTTPException(status_code=404, detail="El negocio no pudo ser publicado.")
     return BusinessResponse.model_validate(published)
 
-# --- Endpoint para ver un negocio específico ---
 @router.get("/{business_id}", response_model=BusinessResponse)
 async def get_single_business(business_id: str, db: AsyncIOMotorDatabase = Depends(get_database)):
     business = await crud_business.get_business_by_id(db, business_id)

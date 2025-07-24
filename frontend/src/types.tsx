@@ -4,22 +4,13 @@ export type Page = 'home' | 'register' | 'login' | 'profile' | 'appointments' | 
 
 export interface Category {
     id: string;
-    _id?: string; // Es útil tener ambos por compatibilidad
+    _id?: string;
     name: string;
-}
-
-export interface Service {
-    id: string;
-    _id?: string; 
-    name: string;
-    category: string;
-    location: string;
-    image_url: string | null;
 }
 
 export interface Appointment {
     id: string;
-    service_id: string;
+    business_id: string; // <--- CAMBIO AQUÍ
     user_id: string;
     appointment_time: string; 
     status: string;
@@ -43,11 +34,9 @@ export interface UserResponse {
     owner_request?: OwnerRequest;
 }
 
-// --- INTERFAZ DE BUSINESS CORREGIDA ---
-// Añadimos _id como opcional para asegurar que siempre tengamos una referencia.
 export interface Business {
     id: string;
-    _id?: string; // Campo de respaldo
+    _id?: string;
     owner_id: string;
     name: string;
     description: string;
