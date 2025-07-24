@@ -11,23 +11,22 @@ import { ProfilePage } from '@/pages/ProfilePage';
 import { AppointmentsPage } from '@/pages/AppointmentsPage';
 import { AdminPage } from '@/pages/AdminPage';
 import { OwnerDashboardPage } from '@/pages/OwnerDashboardPage';
-import { BusinessDetailsPage } from '@/pages/BusinessDetailsPage'; // Se importa la nueva página
+import { BusinessDetailsPage } from '@/pages/BusinessDetailsPage';
+import { TestBookingPage } from '@/pages/TestBookingPage'; // <-- Se importa la página de prueba
 import { Page } from '@/types';
 
-// Se añade 'businessDetails' a los tipos de página posibles
-export type ExtendedPage = Page | 'ownerDashboard' | 'businessDetails';
+// Se añade 'testBooking' a los tipos de página
+export type ExtendedPage = Page | 'ownerDashboard' | 'businessDetails' | 'testBooking';
 
 export default function App() {
     const [currentPage, setCurrentPage] = useState<ExtendedPage>('home');
-    // Nuevo estado para guardar el ID del negocio que el usuario quiere ver
     const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
 
-    // La función de navegación ahora puede aceptar un ID de negocio
     const navigateTo = (page: ExtendedPage, businessId?: string) => {
         if (page === 'businessDetails' && businessId) {
             setSelectedBusinessId(businessId);
         } else {
-            setSelectedBusinessId(null); // Limpiar el ID si no es la página de detalles
+            setSelectedBusinessId(null);
         }
         setCurrentPage(page);
     };
@@ -41,13 +40,12 @@ export default function App() {
             case 'admin': return <AdminPage />;
             case 'ownerDashboard': return <OwnerDashboardPage />;
             
-            // Nuevo caso para renderizar la página de detalles
             case 'businessDetails':
-                if (!selectedBusinessId) {
-                    // Si no hay un ID, vuelve al inicio para evitar errores
-                    return <HomePage navigateTo={navigateTo} />;
-                }
+                if (!selectedBusinessId) { return <HomePage navigateTo={navigateTo} />; }
                 return <BusinessDetailsPage businessId={selectedBusinessId} navigateTo={navigateTo} />;
+
+            case 'testBooking': // <-- Se añade la lógica para mostrar la página de prueba
+                return <TestBookingPage />;
 
             case 'home': 
             default: 

@@ -3,15 +3,13 @@
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import styles from '@/styles/Header.module.css';
-import { ExtendedPage } from '@/App'; // Importamos el tipo extendido desde App.tsx
+import { ExtendedPage } from '@/App';
 
 interface HeaderProps {
     navigateTo: (page: ExtendedPage) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
-    // --- CAMBIO CLAVE ---
-    // Obtenemos el objeto 'user' completo del contexto de autenticación
     const { token, logout, user } = useAuth(); 
 
     const handleLogout = () => {
@@ -24,15 +22,16 @@ export const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
             <div className={styles.headerNav}>
                 <h1 onClick={() => navigateTo('home')}>ServiBook</h1>
                 <nav className={styles.navLinks}>
-                    {token && user ? ( // Verificamos que tanto el token como el usuario existan
+                    {token && user ? (
                         <>
+                            {/* --- Se añade el botón de prueba aquí --- */}
+                            <button onClick={() => navigateTo('testBooking')} style={{color: '#f59e0b', fontWeight: 'bold'}}>Página de Prueba</button>
+                            
                             <button onClick={() => navigateTo('profile')}>Mi Perfil</button>
                             
-                            {/* Lógica corregida para mostrar botones según el rol */}
                             {user.role === 'dueño' && (
                                 <button onClick={() => navigateTo('ownerDashboard')}>Mi Negocio</button>
                             )}
-
                             {user.role === 'admin' && (
                                 <button onClick={() => navigateTo('admin')}>Panel Admin</button>
                             )}

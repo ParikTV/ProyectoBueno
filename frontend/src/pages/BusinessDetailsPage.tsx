@@ -8,68 +8,40 @@ import commonStyles from '@/styles/Common.module.css';
 import { useAuth } from '@/hooks/useAuth';
 import { ExtendedPage } from '@/App';
 
-// --- COMPONENTE MODAL DE RESERVA ---
-const BookingModal: React.FC<{ business: Business; existingAppointments: Appointment[]; onClose: () => void; onBookingSuccess: () => void; }> = ({ business, existingAppointments, onClose, onBookingSuccess }) => {
+// --- MODAL DE RESERVA (VERSIÓN POSTMAN) ---
+const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookingSuccess: () => void; }> = ({ business, onClose, onBookingSuccess }) => {
     const { token, user } = useAuth();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const [selectedDate, setSelectedDate] = useState(today);
-    const [selectedTime, setSelectedTime] = useState<string | null>(null);
+    const [appointmentTimeString, setAppointmentTimeString] = useState('');
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    // Genera horarios de ejemplo, de 9:00 a 17:00
-    const timeSlots = Array.from({ length: 9 }, (_, i) => `${9 + i}:00`);
-    
-    // Crea un set con las fechas de las citas existentes para bloquearlas
-    const bookedSlots = new Set(
-        existingAppointments.map(app => new Date(app.appointment_time).toISOString())
-    );
-
     const handleBooking = async () => {
-        if (!selectedTime) {
-            setError("Por favor, selecciona una hora.");
-            return;
-        }
-        if (!user) {
-            setError("Debes iniciar sesión para reservar.");
-            return;
-        }
-        
+        if (!appointmentTimeString) { setError("Por favor, ingresa la fecha y hora."); return; }
+        if (!user) { setError("Debes iniciar sesión para reservar."); return; }
+
         setIsLoading(true);
         setError('');
-        const [hour] = selectedTime.split(':').map(Number);
-        const bookingDate = new Date(selectedDate);
-        // Usamos setUTCHours para crear una fecha en formato UTC, el estándar universal
-        bookingDate.setUTCHours(hour, 0, 0, 0);
 
         try {
             const res = await fetch(`${API_BASE_URL}/appointments/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({
-                    service_id: business.id,
-                    appointment_time: bookingDate.toISOString() // Se envía en formato ISO 8601
+                    business_id: business.id, // Se envía 'business_id'
+                    appointment_time: appointmentTimeString
                 })
             });
 
-            // --- MANEJO DE ERRORES MEJORADO ---
             if (!res.ok) {
-                // Intenta leer el JSON del error para obtener el detalle del backend
                 const errData = await res.json();
-                // Muestra el mensaje de error específico de FastAPI
-                const errorMessage = errData.detail?.[0]?.msg || errData.detail || "No se pudo crear la cita.";
+                const errorMessage = errData.detail?.[0]?.msg || JSON.stringify(errData.detail) || "No se pudo crear la cita.";
                 throw new Error(errorMessage);
             }
 
             setSuccess("¡Cita reservada con éxito!");
-            setTimeout(() => {
-                onBookingSuccess(); // Recarga las citas en la página de detalles
-                onClose(); // Cierra el modal
-            }, 2000);
-        } catch(err: any) {
-            // Ahora el error que se muestra es el mensaje detallado del backend
+            setTimeout(() => { onBookingSuccess(); onClose(); }, 2000);
+        } catch (err: any) {
             setError(err.message);
         } finally {
             setIsLoading(false);
@@ -82,41 +54,14 @@ const BookingModal: React.FC<{ business: Business; existingAppointments: Appoint
                 <h2>Reservar en {business.name}</h2>
                 {error && <p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p>}
                 {success && <p className={`${commonStyles.alert} ${commonStyles.alertSuccess}`}>{success}</p>}
-                
                 <div className={commonStyles.formGroup}>
-                    <label>Selecciona una fecha</label>
-                    <input type="date" 
-                        onChange={e => setSelectedDate(new Date(e.target.value + 'T00:00:00'))} 
-                        defaultValue={selectedDate.toISOString().split('T')[0]}/>
+                    <label htmlFor="appointmentTime">Fecha y Hora de la Cita</label>
+                    <input id="appointmentTime" type="text" value={appointmentTimeString} onChange={e => setAppointmentTimeString(e.target.value)} placeholder="Ej: 2025-12-01T15:30:00Z" />
+                    <small>Usa el formato exacto: YYYY-MM-DDTHH:MM:SSZ</small>
                 </div>
-
-                <div className={commonStyles.formGroup}>
-                    <label>Selecciona una hora</label>
-                    <div className={styles.timeSlotsGrid}>
-                        {timeSlots.map(time => {
-                            const [hour] = time.split(':').map(Number);
-                            const slotDate = new Date(selectedDate);
-                            slotDate.setUTCHours(hour, 0, 0, 0);
-                            const isBooked = bookedSlots.has(slotDate.toISOString());
-                            
-                            return (
-                                <button key={time} disabled={isBooked}
-                                    className={`${styles.timeSlot} ${selectedTime === time ? styles.selected : ''} ${isBooked ? styles.booked : ''}`}
-                                    onClick={() => setSelectedTime(time)}>
-                                    {time}
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-                
                 <div className={commonStyles.actionButtons}>
-                    <button className={commonStyles.buttonPrimary} onClick={handleBooking} disabled={isLoading}>
-                        {isLoading ? 'Confirmando...' : 'Confirmar Cita'}
-                    </button>
-                    <button className={commonStyles.buttonSecondary} onClick={onClose} disabled={isLoading}>
-                        Cancelar
-                    </button>
+                    <button className={commonStyles.buttonPrimary} onClick={handleBooking} disabled={isLoading}>{isLoading ? 'Confirmando...' : 'Confirmar Cita'}</button>
+                    <button className={commonStyles.buttonSecondary} onClick={onClose} disabled={isLoading}>Cancelar</button>
                 </div>
             </div>
         </div>
@@ -124,11 +69,8 @@ const BookingModal: React.FC<{ business: Business; existingAppointments: Appoint
 };
 
 
-// --- COMPONENTE PRINCIPAL DE LA PÁGINA ---
-interface BusinessDetailsPageProps {
-    businessId: string;
-    navigateTo: (page: ExtendedPage) => void;
-}
+// --- COMPONENTE PRINCIPAL (SIN CAMBIOS) ---
+interface BusinessDetailsPageProps { businessId: string; navigateTo: (page: ExtendedPage) => void; }
 export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ businessId, navigateTo }) => {
     const { token } = useAuth();
     const [business, setBusiness] = useState<Business | null>(null);
@@ -144,7 +86,6 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
                 fetch(`${API_BASE_URL}/appointments/business/${businessId}`)
             ]);
             if (!businessRes.ok) throw new Error("Negocio no encontrado");
-            
             setBusiness(await businessRes.json());
             if (appointmentsRes.ok) setAppointments(await appointmentsRes.json());
         } catch (error) {
@@ -154,46 +95,22 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
         }
     }, [businessId]);
 
-    useEffect(() => {
-        fetchDetails();
-    }, [fetchDetails]);
+    useEffect(() => { fetchDetails(); }, [fetchDetails]);
 
-    if (isLoading) return <div style={{textAlign: 'center', padding: '2rem'}}>Cargando detalles del negocio...</div>;
-    if (!business) return <div style={{textAlign: 'center', padding: '2rem'}}>Negocio no encontrado o no está disponible.</div>;
+    if (isLoading) return <div style={{textAlign: 'center', padding: '2rem'}}>Cargando...</div>;
+    if (!business) return <div style={{textAlign: 'center', padding: '2rem'}}>Negocio no encontrado.</div>;
     
     return (
         <div className={styles.detailsContainer}>
-            {showBookingModal && (
-                <BookingModal 
-                    business={business} 
-                    existingAppointments={appointments} 
-                    onClose={() => setShowBookingModal(false)}
-                    onBookingSuccess={fetchDetails}
-                />
-            )}
-            
-            <div className={styles.imageColumn}>
-                <img src={business.photos?.[0] || 'https://placehold.co/600x400/e2e8f0/4a5568?text=Sin+Imagen'} alt={business.name} />
-            </div>
-
+            {showBookingModal && (<BookingModal business={business} existingAppointments={appointments} onClose={() => setShowBookingModal(false)} onBookingSuccess={fetchDetails} />)}
+            <div className={styles.imageColumn}><img src={business.photos?.[0] || 'https://placehold.co/600x400/e2e8f0/4a5568?text=Sin+Imagen'} alt={business.name} /></div>
             <div className={styles.infoColumn}>
                 <span className={styles.category}>{business.categories.join(', ')}</span>
                 <h1>{business.name}</h1>
                 <p className={styles.address}>{business.address}</p>
                 <hr className={styles.divider} />
                 <p className={styles.description}>{business.description}</p>
-                
-                <button 
-                    className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} 
-                    style={{width: 'auto'}}
-                    onClick={() => {
-                        if (!token) {
-                            alert("Debes iniciar sesión para reservar.");
-                            navigateTo('login');
-                        } else {
-                            setShowBookingModal(true);
-                        }
-                    }}>
+                <button className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} style={{width: 'auto'}} onClick={() => { if (!token) { alert("Debes iniciar sesión para reservar."); navigateTo('login'); } else { setShowBookingModal(true); } }}>
                     Reservar ahora
                 </button>
             </div>

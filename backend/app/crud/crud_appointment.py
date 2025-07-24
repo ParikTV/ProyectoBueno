@@ -1,22 +1,21 @@
 # app/crud/crud_appointment.py
-
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from app.schemas.appointment import AppointmentCreate # Asegúrate que importe el AppointmentCreate actualizado
 from bson import ObjectId
 from datetime import datetime
 
-async def create_appointment(db: AsyncIOMotorDatabase, appointment: AppointmentCreate, user_id: str):
-    # La validación y conversión de la fecha ya ocurrió en el esquema,
-    # así que aquí 'appointment.appointment_time' ya es un objeto datetime.
-    appointment_data = appointment.model_dump()
+# La función se llama 'create' y recibe los parámetros directamente
+async def create(db: AsyncIOMotorDatabase, *, business_id: str, user_id: str, appointment_time: datetime):
+    appointment_doc = {
+        "service_id": ObjectId(business_id), # Lo guardamos como 'service_id'
+        "user_id": ObjectId(user_id),
+        "appointment_time": appointment_time,
+        "status": "confirmed",
+        "created_at": datetime.utcnow()
+    }
     
-    appointment_data["user_id"] = ObjectId(user_id)
-    appointment_data["service_id"] = ObjectId(appointment.service_id)
-    appointment_data["status"] = "confirmed"
-    appointment_data["created_at"] = datetime.utcnow()
-    
-    result = await db["appointments"].insert_one(appointment_data)
-    return await db["appointments"].find_one({"_id": result.inserted_id})
+    result = await db["appointments"].insert_one(appointment_doc)
+    created_appointment = await db["appointments"].find_one({"_id": result.inserted_id})
+    return created_appointment
 
 async def get_appointments_by_user_id(db: AsyncIOMotorDatabase, user_id: str):
     return await db["appointments"].find({"user_id": ObjectId(user_id)}).to_list(100)
