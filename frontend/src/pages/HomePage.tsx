@@ -26,8 +26,10 @@ export const HomePage: React.FC<HomePageProps> = ({ navigateTo }) => {
             setIsLoading(true);
             setError(null);
             try {
+                // --- LÍNEA CORREGIDA ---
+                // Cambiamos "/services/" por "/businesses/" para que coincida con la nueva ruta de la API.
                 const [businessesResponse, categoriesResponse] = await Promise.all([
-                    fetch(`${API_BASE_URL}/services/`),
+                    fetch(`${API_BASE_URL}/businesses/`),
                     fetch(`${API_BASE_URL}/categories/`)
                 ]);
 

@@ -1,51 +1,37 @@
-# backend/app/api/endpoints/users.py
+# app/api/endpoints/users.py
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import List
 
-# Asegúrate de que todas estas importaciones estén presentes
-from app.schemas.user import UserCreate, UserResponse, UserUpdate, OwnerRequest
-from app.schemas.category_request import CategoryRequestResponse 
-from app.core.security import get_current_user
-from app.crud import crud_user
 from app.db.session import get_database
+from app.schemas.user import UserCreate, UserResponse, UserUpdate, OwnerRequest
+from app.schemas.category_request import CategoryRequestCreate, CategoryRequestResponse
+from app.schemas.category import CategoryResponse
+from app.crud import crud_user, crud_category_request
+from app.core.security import get_current_user
 
 router = APIRouter()
 
-async def get_current_admin_user(current_user: UserResponse = Depends(get_current_user)):
-    """
-    Dependencia que verifica si el usuario autenticado tiene el rol de 'admin'.
-    """
-    if current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tienes permisos de administrador"
-        )
+# --- Dependencia para verificar si el usuario es Admin ---
+def get_current_admin_user(current_user: UserResponse = Depends(get_current_user)):
+    if current_user.role != 'admin':
+        raise HTTPException(status_code=403, detail="No tienes permisos de administrador")
     return current_user
 
-
+# --- Endpoints de Usuarios ---
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def register_user(
-    user_in: UserCreate,
-    db: AsyncIOMotorDatabase = Depends(get_database)
-):
-    """
-    Registra un nuevo usuario en la base de datos.
-    """
-    user = await crud_user.get_user_by_email(db, email=user_in.email)
+async def create_new_user(user_in: UserCreate, db: AsyncIOMotorDatabase = Depends(get_database)):
+    user = await crud_user.get_user_by_email(db, user_in.email)
     if user:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Ya existe un usuario con este correo electrónico."
-        )
-    new_user = await crud_user.create_user(db, user=user_in)
-    return new_user
+        raise HTTPException(status_code=400, detail="Ya existe un usuario con este correo electrónico.")
+    new_user = await crud_user.create_user(db, user_in)
+    return UserResponse.model_validate(new_user)
 
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: UserResponse = Depends(get_current_user)):
     """
-    Obtiene el perfil del usuario autenticado actualmente.
+    Obtiene el perfil del usuario actualmente autenticado.
     """
     return current_user
 
@@ -56,10 +42,10 @@ async def update_user_me(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """
-    Actualiza el perfil del usuario autenticado.
+    Actualiza el perfil del usuario (nombre completo, teléfono).
     """
-    updated_user = await crud_user.update_user(db, user_email=current_user.email, user_in=user_in)
-    return updated_user
+    updated_user = await crud_user.update_user(db, user_id=current_user.id, user_in=user_in)
+    return UserResponse.model_validate(updated_user)
 
 @router.post("/me/request-owner", response_model=UserResponse)
 async def request_owner_status(
@@ -68,64 +54,67 @@ async def request_owner_status(
     current_user: UserResponse = Depends(get_current_user)
 ):
     """
-    Permite a un usuario con rol 'usuario' solicitar convertirse en 'dueño'.
+    Permite a un usuario solicitar el rol de dueño.
     """
     if current_user.role != 'usuario':
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Solo los usuarios pueden solicitar ser dueños.")
-    
-    request_with_status = request_data.model_copy(update={"status": "pending"})
-    updated_user = await crud_user.request_to_be_owner(db, current_user.email, request_with_status)
-    return updated_user
+        raise HTTPException(status_code=400, detail="Solo los usuarios pueden solicitar ser dueños.")
+    if current_user.owner_request and current_user.owner_request.status == 'pending':
+        raise HTTPException(status_code=400, detail="Ya tienes una solicitud pendiente.")
+        
+    updated_user = await crud_user.create_owner_request(db, user_id=current_user.id, request_data=request_data)
+    return UserResponse.model_validate(updated_user)
+
+
+# --- Endpoints de Administración (dentro de /users) ---
 
 @router.get("/admin/owner-requests", response_model=List[UserResponse])
-async def get_owner_requests(
-    db: AsyncIOMotorDatabase = Depends(get_database),
-    admin_user: UserResponse = Depends(get_current_admin_user)
-):
+async def get_pending_requests(db: AsyncIOMotorDatabase = Depends(get_database), admin_user: UserResponse = Depends(get_current_admin_user)):
     """
-    (Solo Admin) Obtiene todas las solicitudes pendientes para ser dueño.
+    (Admin) Obtiene todas las solicitudes pendientes para ser dueño.
     """
-    requests_from_db = await crud_user.get_all_owner_requests(db)
-    return [UserResponse.model_validate(req) for req in requests_from_db]
+    requests = await crud_user.get_pending_owner_requests(db)
+    return [UserResponse.model_validate(req) for req in requests]
 
-@router.post("/admin/approve-owner/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def approve_owner_request_endpoint(
-    user_id: str,
-    db: AsyncIOMotorDatabase = Depends(get_database),
-    admin_user: UserResponse = Depends(get_current_admin_user)
-):
+@router.post("/admin/approve-owner/{user_id}", response_model=UserResponse)
+async def approve_owner(user_id: str, db: AsyncIOMotorDatabase = Depends(get_database), admin_user: UserResponse = Depends(get_current_admin_user)):
     """
-    (Solo Admin) Aprueba una solicitud, cambiando el rol del usuario a 'dueño'.
+    (Admin) Aprueba una solicitud de dueño y actualiza el rol del usuario.
     """
-    await crud_user.approve_owner_request(db, user_id)
-    return
-
-# --- NUEVO ENDPOINT PARA VER SOLICITUDES DE CATEGORÍA ---
-@router.get("/admin/category-requests", response_model=List[CategoryRequestResponse])
-async def get_admin_category_requests(
-    db: AsyncIOMotorDatabase = Depends(get_database),
-    admin_user: UserResponse = Depends(get_current_admin_user)
-):
-    """
-    (Solo Admin) Obtiene todas las solicitudes pendientes para crear nuevas categorías.
-    """
-    from app.crud.crud_category_request import get_pending_category_requests
+    user_to_approve = await crud_user.get_user_by_id(db, user_id)
+    if not user_to_approve:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
     
-    requests_from_db = await get_pending_category_requests(db)
-    # Validamos los datos para asegurar el formato correcto (_id -> id)
-    return [CategoryRequestResponse.model_validate(req) for req in requests_from_db]
+    approved_user = await crud_user.approve_owner_request(db, user_id)
+    return UserResponse.model_validate(approved_user)
 
-# --- NUEVO ENDPOINT PARA APROBAR SOLICITUDES DE CATEGORÍA ---
-@router.post("/admin/category-requests/{request_id}/approve", status_code=status.HTTP_204_NO_CONTENT)
-async def approve_category_request_endpoint(
+@router.get("/admin/owners", response_model=List[UserResponse])
+async def get_all_owner_users(db: AsyncIOMotorDatabase = Depends(get_database), admin_user: UserResponse = Depends(get_current_admin_user)):
+    """
+    (Admin) Obtiene una lista de todos los usuarios con rol 'dueño'.
+    """
+    owners = await crud_user.get_all_owners(db)
+    return [UserResponse.model_validate(owner) for owner in owners]
+
+# --- Endpoints para Solicitudes de Categorías (dentro de /users) ---
+
+@router.get("/admin/category-requests", response_model=List[CategoryRequestResponse])
+async def get_all_category_requests(db: AsyncIOMotorDatabase = Depends(get_database), admin_user: UserResponse = Depends(get_current_admin_user)):
+    """
+    (Admin) Obtiene todas las solicitudes pendientes para crear categorías.
+    """
+    requests = await crud_category_request.get_all_pending_category_requests(db)
+    return [CategoryRequestResponse.model_validate(req) for req in requests]
+
+@router.post("/admin/category-requests/{request_id}/approve", response_model=CategoryResponse)
+async def approve_category_request(
     request_id: str,
     db: AsyncIOMotorDatabase = Depends(get_database),
     admin_user: UserResponse = Depends(get_current_admin_user)
 ):
     """
-    (Solo Admin) Aprueba una solicitud de categoría, creando la nueva categoría.
+    (Admin) Aprueba una solicitud y crea la nueva categoría.
     """
-    from app.crud.crud_category_request import approve_category_request
-    
-    await approve_category_request(db, request_id)
-    return
+    new_category = await crud_category_request.approve_category_request_and_create_category(db, request_id)
+    if not new_category:
+        raise HTTPException(status_code=404, detail="Solicitud no encontrada o error al crear la categoría.")
+    return CategoryResponse.model_validate(new_category)

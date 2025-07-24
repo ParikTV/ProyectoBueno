@@ -1,13 +1,15 @@
+// src/pages/OwnerDashboardPage.tsx
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { API_BASE_URL } from '@/services/api';
 import { Business, Category } from '@/types';
 import commonStyles from '@/styles/Common.module.css';
 
-// --- Componente para registrar la empresa si no existe ---
-const BusinessRegistrationForm: React.FC<{ onBusinessRegistered: () => void }> = ({ onBusinessRegistered }) => {
-    const { token, user } = useAuth();
-    const [formData, setFormData] = useState({ name: '', description: '', address: '', logo_url: '' });
+// --- Componente para registrar un NUEVO negocio ---
+const BusinessRegistrationForm: React.FC<{ onSave: () => void; onCancel: () => void; }> = ({ onSave, onCancel }) => {
+    const { token } = useAuth();
+    const [formData, setFormData] = useState({ name: '', description: '', address: ''});
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -15,32 +17,21 @@ const BusinessRegistrationForm: React.FC<{ onBusinessRegistered: () => void }> =
         e.preventDefault();
         setError('');
         setIsLoading(true);
-        if (!user) {
-            setError("Error de autenticación, por favor inicia sesión de nuevo.");
-            setIsLoading(false);
-            return;
-        }
-
         try {
-            // El endpoint espera un BusinessBase, que no incluye owner_id
-            const businessData = {
-                name: formData.name,
-                description: formData.description,
-                address: formData.address,
-                logo_url: formData.logo_url,
-            };
-
-            const response = await fetch(`${API_BASE_URL}/businesses/`, {
+            // Se envía a la API con las validaciones del backend
+            const response = await fetch(`${API_BASE_URL}/businesses/my-business`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(businessData)
+                body: JSON.stringify(formData)
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.detail || "No se pudo registrar la empresa.");
+                // Muestra un error más detallado si la API lo envía
+                const detail = errorData.detail?.[0];
+                const errorMessage = detail ? `${detail.loc[1]}: ${detail.msg}` : (errorData.detail || "No se pudo registrar la empresa.");
+                throw new Error(errorMessage);
             }
-            onBusinessRegistered();
+            onSave();
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -50,24 +41,25 @@ const BusinessRegistrationForm: React.FC<{ onBusinessRegistered: () => void }> =
 
     return (
         <div className={commonStyles.formContainer} style={{maxWidth: '600px'}}>
-            <h2>Registra tu Empresa</h2>
-            <p style={{textAlign: 'center', marginBottom: '1.5rem'}}>Completa los datos de tu negocio para empezar a ofrecer tus servicios.</p>
+            <h2>Registra un Nuevo Negocio</h2>
+            <p style={{textAlign: 'center', marginBottom: '1.5rem'}}>Completa los datos de tu nuevo negocio para empezar.</p>
             {error && <p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p>}
             <form onSubmit={handleSubmit}>
-                <div className={commonStyles.formGroup}><label>Nombre de la Empresa</label><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required /></div>
-                <div className={commonStyles.formGroup}><label>Dirección</label><input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} required /></div>
-                <div className={commonStyles.formGroup}><label>Descripción Corta del Negocio</label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} required style={{minHeight: '100px', width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem'}} /></div>
-                <div className={commonStyles.formGroup}><label>URL del Logo (Opcional)</label><input type="url" placeholder="https://ejemplo.com/logo.png" value={formData.logo_url} onChange={e => setFormData({...formData, logo_url: e.target.value})} /></div>
-                <button type="submit" className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} disabled={isLoading}>
-                    {isLoading ? 'Registrando...' : 'Registrar Empresa'}
-                </button>
+                <div className={commonStyles.formGroup}><label>Nombre del Negocio (mín. 3 caracteres)</label><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required /></div>
+                <div className={commonStyles.formGroup}><label>Dirección (mín. 5 caracteres)</label><input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} required /></div>
+                <div className={commonStyles.formGroup}><label>Descripción Corta (mín. 10 caracteres)</label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} required style={{minHeight: '100px', width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', boxSizing: 'border-box'}} /></div>
+                <div className={commonStyles.actionButtons}>
+                    <button type="submit" className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} disabled={isLoading}>
+                        {isLoading ? 'Registrando...' : 'Registrar Negocio'}
+                    </button>
+                     <button type="button" className={`${commonStyles.button} ${commonStyles.buttonSecondary}`} onClick={onCancel}>Cancelar</button>
+                </div>
             </form>
         </div>
     );
 };
 
-
-// --- Componente para el formulario de edición del negocio ---
+// --- Componente para el formulario de EDICIÓN del negocio ---
 const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCancel: () => void; }> = ({ business, onSave, onCancel }) => {
     const { token } = useAuth();
     const [formData, setFormData] = useState<Business>(business);
@@ -80,22 +72,15 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
         const fetchCategories = async () => {
             try {
                 const res = await fetch(`${API_BASE_URL}/categories/`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setAllCategories(data);
-                }
-            } catch (err) {
-                console.error("No se pudieron cargar las categorías.");
-            }
+                if (res.ok) setAllCategories(await res.json());
+            } catch (err) { console.error("No se pudieron cargar las categorías."); }
         };
         fetchCategories();
     }, []);
 
     const handleCategoryChange = (categoryName: string) => {
         const currentCategories = formData.categories || [];
-        const newCategories = currentCategories.includes(categoryName)
-            ? currentCategories.filter(c => c !== categoryName)
-            : [...currentCategories, categoryName];
+        const newCategories = currentCategories.includes(categoryName) ? currentCategories.filter(c => c !== categoryName) : [...currentCategories, categoryName];
         setFormData({ ...formData, categories: newCategories });
     };
 
@@ -111,21 +96,22 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
         setError('');
         setIsLoading(true);
         try {
-            // Solo enviamos los campos que se pueden actualizar
-            const updateData = {
-                name: formData.name,
-                description: formData.description,
-                address: formData.address,
-                logo_url: formData.logo_url,
-                photos: formData.photos,
-                categories: formData.categories
-            };
-            const response = await fetch(`${API_BASE_URL}/businesses/my-business`, {
+            const businessId = business.id || business._id;
+            if (!businessId) throw new Error("ID del negocio no encontrado.");
+            
+            const updateData = { name: formData.name, description: formData.description, address: formData.address, photos: formData.photos, categories: formData.categories };
+            
+            const response = await fetch(`${API_BASE_URL}/businesses/my-business/${businessId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify(updateData)
             });
-            if (!response.ok) throw new Error("No se pudieron guardar los cambios.");
+            if (!response.ok) {
+                 const errorData = await response.json();
+                 const detail = errorData.detail?.[0];
+                 const errorMessage = detail ? `${detail.loc[1]}: ${detail.msg}` : (errorData.detail || "No se pudieron guardar los cambios.");
+                 throw new Error(errorMessage);
+            }
             onSave();
         } catch (err: any) {
             setError(err.message);
@@ -136,223 +122,84 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
 
     return (
         <div className={commonStyles.formContainer} style={{maxWidth: '700px'}}>
-            <h2>Editar Negocio</h2>
+            <h2>Editar {business.name}</h2>
             {error && <p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p>}
             <form onSubmit={handleSubmit}>
-                <div className={commonStyles.formGroup}><label>Nombre de la Empresa</label><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required /></div>
-                <div className={commonStyles.formGroup}><label>Dirección</label><input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} required /></div>
-                <div className={commonStyles.formGroup}><label>Descripción</label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} required style={{minHeight: '100px', width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem'}} /></div>
-
-                <div className={commonStyles.formGroup}>
-                    <label>Categorías</label>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}>
-                        {allCategories.length > 0 ? allCategories.map(cat => (
-                            <label key={cat.id || cat._id} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                                <input type="checkbox" checked={formData.categories.includes(cat.name)} onChange={() => handleCategoryChange(cat.name)} />
-                                {cat.name}
-                            </label>
-                        )) : <p>No hay categorías disponibles.</p>}
-                    </div>
-                </div>
-                
-                <div className={commonStyles.formGroup}>
-                    <label>Fotos del Negocio</label>
-                    <div style={{display: 'flex', gap: '10px'}}>
-                        <input type="url" placeholder="https://ejemplo.com/foto.jpg" value={newPhotoUrl} onChange={e => setNewPhotoUrl(e.target.value)} style={{flexGrow: 1}}/>
-                        <button type="button" className={commonStyles.buttonSecondary} onClick={handleAddPhoto} style={{width: 'auto'}}>Añadir</button>
-                    </div>
-                    <div style={{display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px'}}>
-                        {formData.photos.map((photo, index) => <img key={index} src={photo} alt={`Foto ${index + 1}`} style={{width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px'}}/>)}
-                    </div>
-                </div>
-
-                <div className={commonStyles.actionButtons}>
-                    <button type="submit" className={commonStyles.buttonPrimary} disabled={isLoading}>{isLoading ? 'Guardando...' : 'Guardar Cambios'}</button>
-                    <button type="button" className={commonStyles.buttonSecondary} onClick={onCancel}>Cancelar</button>
-                </div>
+                 <div className={commonStyles.formGroup}><label>Nombre de la Empresa (mín. 3)</label><input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required /></div>
+                <div className={commonStyles.formGroup}><label>Dirección (mín. 5)</label><input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} required /></div>
+                <div className={commonStyles.formGroup}><label>Descripción (mín. 10)</label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} required style={{minHeight: '100px', width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', boxSizing: 'border-box'}} /></div>
+                <div className={commonStyles.formGroup}><label>Categorías</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}>
+                        {allCategories.map(cat => (<label key={cat.id || cat._id} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}><input type="checkbox" checked={formData.categories.includes(cat.name)} onChange={() => handleCategoryChange(cat.name)} />{cat.name}</label>))}
+                </div></div>
+                <div className={commonStyles.formGroup}><label>Fotos del Negocio</label><div style={{display: 'flex', gap: '10px'}}><input type="url" placeholder="https://ejemplo.com/foto.jpg" value={newPhotoUrl} onChange={e => setNewPhotoUrl(e.target.value)} style={{flexGrow: 1}}/><button type="button" className={commonStyles.buttonSecondary} onClick={handleAddPhoto} style={{width: 'auto'}}>Añadir</button></div><div style={{display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px'}}>{formData.photos.map((photo, index) => <img key={index} src={photo} alt={`Foto ${index + 1}`} style={{width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px'}}/>)}</div></div>
+                <div className={commonStyles.actionButtons}><button type="submit" className={commonStyles.buttonPrimary} disabled={isLoading}>{isLoading ? 'Guardando...' : 'Guardar Cambios'}</button><button type="button" className={commonStyles.buttonSecondary} onClick={onCancel}>Cancelar</button></div>
             </form>
         </div>
     );
 };
-
-
-// --- Componente para solicitar una nueva categoría ---
-const CategoryRequestForm: React.FC = () => {
-    const { token, user } = useAuth();
-    const [formData, setFormData] = useState({ category_name: '', reason: '', evidence_url: '' });
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setSuccess('');
-        setIsLoading(true);
-        if (!user) {
-            setError("Error de autenticación.");
-            setIsLoading(false);
-            return;
-        }
-
-        try {
-            const requestData = {
-                category_name: formData.category_name,
-                reason: formData.reason,
-                evidence_url: formData.evidence_url,
-            };
-            const response = await fetch(`${API_BASE_URL}/category-requests/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify(requestData)
-            });
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.detail || "No se pudo enviar la solicitud.");
-            }
-            setSuccess("¡Solicitud enviada con éxito! El administrador la revisará pronto.");
-            setFormData({ category_name: '', reason: '', evidence_url: '' });
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    
-    return (
-        <div className={commonStyles.formContainer} style={{marginTop: '2rem', maxWidth: '700px'}}>
-            <h2>Solicitar Nueva Categoría</h2>
-            <p style={{textAlign: 'center', marginBottom: '1.5rem'}}>Si tu servicio no encaja en las categorías existentes, puedes proponer una nueva.</p>
-            {error && <p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p>}
-            {success && <p className={`${commonStyles.alert} ${commonStyles.alertSuccess}`}>{success}</p>}
-            <form onSubmit={handleSubmit}>
-                <div className={commonStyles.formGroup}><label>Nombre de la Categoría Propuesta</label><input type="text" value={formData.category_name} onChange={e => setFormData({...formData, category_name: e.target.value})} required /></div>
-                <div className={commonStyles.formGroup}><label>Motivo y Descripción del Servicio</label><textarea value={formData.reason} onChange={e => setFormData({...formData, reason: e.target.value})} required style={{minHeight: '100px', width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem'}} /></div>
-                <div className={commonStyles.formGroup}><label>URL de Evidencia (Opcional)</label><input type="url" placeholder="https://ejemplo.com/evidencia.pdf" value={formData.evidence_url} onChange={e => setFormData({...formData, evidence_url: e.target.value})} /></div>
-                <button type="submit" className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} disabled={isLoading}>
-                    {isLoading ? 'Enviando...' : 'Enviar Solicitud'}
-                </button>
-            </form>
-        </div>
-    );
-};
-
 
 // --- Componente principal de la página ---
 export const OwnerDashboardPage: React.FC = () => {
     const { token } = useAuth();
-    const [business, setBusiness] = useState<Business | null>(null);
+    const [businesses, setBusinesses] = useState<Business[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState<Business | null>(null);
+    const [isRegistering, setIsRegistering] = useState(false);
 
-    const fetchBusiness = async () => {
+    const fetchBusinesses = async () => {
+        if (!token) return;
         setIsLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/businesses/my-business`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (response.ok) {
-                const data = await response.json();
-                setBusiness(data);
-            } else if (response.status === 404) {
-                setBusiness(null);
-            } else {
-                throw new Error("No se pudo verificar la información de tu empresa.");
-            }
-        } catch (error) {
-            console.error("Error al cargar la empresa", error);
-        } finally {
-            setIsLoading(false);
-        }
+            const response = await fetch(`${API_BASE_URL}/businesses/my-businesses`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (response.ok) { setBusinesses(await response.json()); }
+        } catch (error) { console.error("Error al cargar las empresas", error); } 
+        finally { setIsLoading(false); }
     };
 
-    useEffect(() => {
-        if (token) {
-            fetchBusiness();
-        }
-    }, [token]);
+    useEffect(() => { fetchBusinesses(); }, [token]);
 
-    const handleLaunch = async () => {
-        if (!window.confirm("¿Estás seguro de que quieres lanzar tu negocio? Será visible para todos los usuarios y ya no podrás ocultarlo.")) return;
+    const handleLaunch = async (businessId: string | undefined) => {
+        if (!businessId) { alert("Error: ID del negocio no encontrado."); return; }
+        if (!window.confirm("¿Estás seguro de que quieres lanzar este negocio?")) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/businesses/my-business/publish`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (!res.ok) throw new Error("No se pudo lanzar el servicio.");
-            fetchBusiness(); // Recargar datos para mostrar el nuevo estado
-        } catch (err) {
-            console.error(err);
-        }
+            const res = await fetch(`${API_BASE_URL}/businesses/my-business/${businessId}/publish`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+            if (!res.ok) { throw new Error((await res.json()).detail || "No se pudo lanzar el servicio."); }
+            fetchBusinesses(); 
+        } catch (err: any) { alert(`Error al lanzar el servicio: ${err.message}`); }
     };
     
-    if (isLoading) return <div style={{textAlign: 'center', padding: '2rem'}}>Cargando...</div>;
+    const handleFormClose = () => { setIsEditing(null); setIsRegistering(false); fetchBusinesses(); }
 
-    // Si no hay negocio, muestra el formulario de registro
-    if (!business) {
-        return (
-             <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem'}}>
-                <BusinessRegistrationForm onBusinessRegistered={fetchBusiness} />
-            </div>
-        );
-    }
-
-    // Si está en modo edición, muestra el formulario de edición
-    if (isEditing) {
-        return (
-            <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem'}}>
-                <BusinessEditForm business={business} onSave={() => { setIsEditing(false); fetchBusiness(); }} onCancel={() => setIsEditing(false)} />
-            </div>
-        );
-    }
-
-    // Vista principal del panel de dueño
+    if (isLoading) return <div style={{textAlign: 'center', padding: '2rem'}}>Cargando panel de dueño...</div>;
+    if (isRegistering) return <div style={{display: 'flex', justifyContent: 'center', padding: '1rem'}}><BusinessRegistrationForm onSave={handleFormClose} onCancel={() => setIsRegistering(false)} /></div>
+    if (isEditing) return <div style={{display: 'flex', justifyContent: 'center', padding: '1rem'}}><BusinessEditForm business={isEditing} onSave={handleFormClose} onCancel={() => setIsEditing(null)} /></div>
+    
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem' }}>
-            <div style={{width: '100%'}}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
-                    <h1 style={{ margin: 0, fontSize: '2.25rem' }}>Panel de Dueño</h1>
-                    {business.status === 'draft' && (
-                        <button className={commonStyles.buttonPrimary} onClick={handleLaunch} style={{width: 'auto'}}>
-                            🚀 Lanzar Servicio
-                        </button>
-                    )}
+        <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}><h1 style={{ margin: 0, fontSize: '2.25rem' }}>Mis Negocios</h1><button className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} style={{width: 'auto'}} onClick={() => setIsRegistering(true)}>+ Registrar Nuevo Negocio</button></div>
+            {businesses.length === 0 ? (
+                <div className={`${commonStyles.alert}`} style={{backgroundColor: '#eef2ff', color: '#4338ca', textAlign: 'center', padding: '2rem'}}><p>Aún no tienes negocios registrados.</p><p>¡Haz clic en <strong>"Registrar Nuevo Negocio"</strong> para empezar a ofrecer tus servicios!</p></div>
+            ) : (
+                <div style={{ display: 'grid', gap: '1.5rem' }}>
+                    {businesses.map(business => {
+                        const businessId = business.id || business._id;
+                        return (
+                            <div key={businessId} style={{backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.75rem', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap'}}>
+                               <div>
+                                    <h2 style={{marginTop: 0, marginBottom: '0.5rem'}}>{business.name}</h2>
+                                   <p style={{margin: 0, padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 'bold', display: 'inline-block', backgroundColor: business.status === 'published' ? '#dcfce7' : '#fffbeb', color: business.status === 'published' ? '#166534' : '#b45309'}}>
+                                        {business.status === 'published' ? 'PUBLICADO' : 'BORRADOR'}
+                                    </p>
+                               </div>
+                               <div style={{ display: 'flex', gap: '1rem' }}>
+                                    {business.status === 'draft' && (<button className={commonStyles.buttonPrimary} style={{width: 'auto', padding: '0.5rem 1rem'}} onClick={() => handleLaunch(businessId)}>🚀 Lanzar</button>)}
+                                    <button className={commonStyles.buttonSecondary} style={{width: 'auto', padding: '0.5rem 1rem'}} onClick={() => setIsEditing(business)}>Editar</button>
+                               </div>
+                            </div>
+                        )
+                    })}
                 </div>
-                
-                {business.status === 'draft' && (
-                    <div className={commonStyles.alert} style={{backgroundColor: '#fffbeb', color: '#b45309', marginBottom: '1.5rem'}}>
-                        Tu negocio está en modo **borrador**. Completa los detalles y lánzalo para que sea visible para todos.
-                    </div>
-                )}
-                {business.status === 'published' && (
-                    <div className={commonStyles.alertSuccess}>
-                        ¡Felicidades! Tu negocio está **publicado** y es visible para todos los usuarios.
-                    </div>
-                )}
-                
-                <div style={{backgroundColor: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                        <div>
-                            <h2 style={{ marginTop: 0 }}>{business.name}</h2>
-                            <p>{business.address}</p>
-                        </div>
-                        <button className={commonStyles.buttonSecondary} onClick={() => setIsEditing(true)} style={{width: 'auto'}}>Editar</button>
-                    </div>
-                    <hr style={{border: 'none', borderTop: '1px solid #eee', margin: '1rem 0'}}/>
-                    <p><strong>Descripción:</strong> {business.description}</p>
-                    <p><strong>Categorías:</strong> {business.categories.join(', ') || 'Ninguna seleccionada'}</p>
-                    <div>
-                        <strong>Fotos:</strong>
-                        <div style={{display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px'}}>
-                            {business.photos.length > 0 ? business.photos.map((photo, index) => (
-                                <img key={index} src={photo} alt={`Foto ${index + 1}`} style={{width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px'}}/>
-                            )) : <p style={{margin: '0.5rem 0 0 0', color: '#6b7280'}}>No hay fotos añadidas.</p>}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <CategoryRequestForm />
+            )}
         </div>
     );
 };

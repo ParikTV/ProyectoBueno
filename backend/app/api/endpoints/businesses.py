@@ -2,91 +2,107 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from typing import List, Optional
+
 from app.db.session import get_database
 from app.schemas.user import UserResponse
-from app.crud.crud_business import get_business_by_id # <-- AÑADIR
 from app.schemas.business import BusinessBase, BusinessResponse, BusinessUpdate
-from app.crud.crud_business import (
-    create_business, 
-    get_business_by_owner_id, 
-    update_business,
-    publish_business,
-    get_published_businesses # Importamos la nueva función
-)
+from app.crud import crud_business, crud_user
 from app.core.security import get_current_user
+from .users import get_current_admin_user
 
 router = APIRouter()
 
+# --- Dependencia para Dueños ---
 async def get_current_owner_user(current_user: UserResponse = Depends(get_current_user)):
-    if current_user.role != "dueño":
-        raise HTTPException(status_code=403, detail="Acción solo para dueños")
+    if current_user.role not in ["dueño", "admin"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acción solo para dueños")
     return current_user
 
-@router.post("/", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
-async def register_business(
-    business_in: BusinessBase, 
-    db: AsyncIOMotorDatabase = Depends(get_database),
-    owner: UserResponse = Depends(get_current_owner_user)
-):
-    existing_business = await get_business_by_owner_id(db, owner.id)
-    if existing_business:
-        raise HTTPException(status_code=400, detail="Ya tienes una empresa registrada.")
-    
-    business_data_with_owner = business_in.model_dump()
-    business_data_with_owner['owner_id'] = owner.id
-    
-    business = await create_business(db, business_data_with_owner)
-    return BusinessResponse.model_validate(business)
+# --- Endpoint público para ver todos los negocios ---
+@router.get("/", response_model=List[BusinessResponse])
+async def get_all_published_businesses(db: AsyncIOMotorDatabase = Depends(get_database)):
+    businesses = await crud_business.get_all_businesses(db)
+    return [BusinessResponse.model_validate(b) for b in businesses]
 
-@router.get("/my-business", response_model=BusinessResponse)
-async def get_my_business(
-    db: AsyncIOMotorDatabase = Depends(get_database),
-    owner: UserResponse = Depends(get_current_owner_user)
-):
-    business = await get_business_by_owner_id(db, owner.id)
+# --- Endpoint público para ver un negocio específico ---
+@router.get("/{business_id}", response_model=BusinessResponse)
+async def get_single_business(business_id: str, db: AsyncIOMotorDatabase = Depends(get_database)):
+    business = await crud_business.get_business_by_id(db, business_id)
     if not business:
-        raise HTTPException(status_code=404, detail="No se encontró una empresa para este dueño.")
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
     return BusinessResponse.model_validate(business)
 
-# --- ENDPOINT DE ACTUALIZACIÓN ---
-@router.put("/my-business", response_model=BusinessResponse)
+# --- Endpoints para Dueños autenticados ---
+
+@router.post("/my-business", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
+async def register_new_business(
+    business_in: BusinessBase,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    owner: UserResponse = Depends(get_current_owner_user)
+):
+    """Un dueño registra un nuevo negocio para sí mismo."""
+    business_dict = business_in.model_dump()
+    new_business = await crud_business.create_business(db, business_data=business_dict, owner_id=owner.id)
+    return BusinessResponse.model_validate(new_business)
+
+
+@router.get("/my-businesses", response_model=List[BusinessResponse])
+async def get_my_businesses(
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    owner: UserResponse = Depends(get_current_owner_user)
+):
+    """Obtiene la lista de negocios del dueño autenticado."""
+    businesses = await crud_business.get_businesses_by_owner_id(db, owner.id)
+    return [BusinessResponse.model_validate(b) for b in businesses]
+
+
+@router.put("/my-business/{business_id}", response_model=BusinessResponse)
 async def update_my_business(
+    business_id: str,
     business_in: BusinessUpdate,
     db: AsyncIOMotorDatabase = Depends(get_database),
     owner: UserResponse = Depends(get_current_owner_user)
 ):
-    updated_business = await update_business(db, owner.id, business_in)
-    if not updated_business:
-        raise HTTPException(status_code=404, detail="No se encontró tu empresa para actualizar.")
+    """Un dueño actualiza uno de sus negocios."""
+    # Verificar que el negocio pertenece al dueño
+    business = await crud_business.get_business_by_id(db, business_id)
+    if not business or str(business['owner_id']) != owner.id:
+        raise HTTPException(status_code=403, detail="No tienes permiso para editar este negocio.")
+
+    updated_business = await crud_business.update_business(db, business_id, owner.id, business_in)
     return BusinessResponse.model_validate(updated_business)
 
-# --- NUEVO ENDPOINT PARA LANZAR/PUBLICAR ---
-@router.post("/my-business/publish", response_model=BusinessResponse)
+
+@router.post("/my-business/{business_id}/publish", response_model=BusinessResponse)
 async def publish_my_business(
+    business_id: str,
     db: AsyncIOMotorDatabase = Depends(get_database),
     owner: UserResponse = Depends(get_current_owner_user)
 ):
-    # Verificamos que el negocio exista antes de intentar publicarlo
-    business = await get_business_by_owner_id(db, owner.id)
-    if not business:
-        raise HTTPException(status_code=404, detail="No se encontró tu empresa para publicarla.")
+    """Un dueño publica uno de sus negocios."""
+    business = await crud_business.get_business_by_id(db, business_id)
+    if not business or str(business['owner_id']) != owner.id:
+        raise HTTPException(status_code=403, detail="No tienes permiso para publicar este negocio.")
 
-    await publish_business(db, owner.id)
-    
-    # Obtenemos la versión actualizada para devolverla
-    updated_business = await get_business_by_owner_id(db, owner.id)
-    return BusinessResponse.model_validate(updated_business)
+    published = await crud_business.publish_business(db, business_id, owner.id)
+    return BusinessResponse.model_validate(published)
 
-# --- NUEVO ENDPOINT ---
-@router.get("/{business_id}", response_model=BusinessResponse)
-async def get_business_details(
-    business_id: str,
-    db: AsyncIOMotorDatabase = Depends(get_database)
+
+# --- Endpoints solo para Administradores ---
+
+@router.post("/admin/assign-business", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
+async def admin_create_and_assign_business(
+    owner_id: str,
+    business_in: BusinessBase,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    admin: UserResponse = Depends(get_current_admin_user)
 ):
-    """
-    Obtiene los detalles públicos de un negocio específico por su ID.
-    """
-    business = await get_business_by_id(db, business_id)
-    if not business or business.get("status") != "published":
-        raise HTTPException(status_code=404, detail="Negocio no encontrado o no disponible.")
-    return BusinessResponse.model_validate(business)
+    """(Admin) Crea un negocio y lo asigna a un dueño existente."""
+    owner = await crud_user.get_user_by_id(db, owner_id)
+    if not owner or owner['role'] != 'dueño':
+        raise HTTPException(status_code=404, detail="El ID proporcionado no corresponde a un usuario con rol 'dueño'.")
+
+    business_dict = business_in.model_dump()
+    new_business = await crud_business.create_business(db, business_data=business_dict, owner_id=owner_id)
+    return BusinessResponse.model_validate(new_business)

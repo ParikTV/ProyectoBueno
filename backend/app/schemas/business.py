@@ -1,53 +1,38 @@
 # app/schemas/business.py
 
-from pydantic import BaseModel, Field, field_validator
-from typing import Optional, Any, List, Literal
-from .user import PyObjectId
-from bson import ObjectId
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from .utils import PyObjectId
 
+# Modelo base sin validaciones estrictas de longitud, para lectura.
 class BusinessBase(BaseModel):
-    name: str = Field(..., max_length=100)
-    description: str = Field(..., max_length=500)
+    name: str
+    description: str
     address: str
-    logo_url: Optional[str] = None
-    # --- CAMPOS NUEVOS AÑADIDOS ---
-    photos: List[str] = Field(default_factory=list)
-    categories: List[str] = Field(default_factory=list)
-    status: Literal["draft", "published"] = "draft"
 
-class BusinessCreate(BusinessBase):
-    pass # El owner_id se gestiona en el backend
+# Modelo para CREAR un negocio. Aquí sí aplicamos las reglas.
+class BusinessCreate(BaseModel):
+    name: str = Field(..., min_length=3, max_length=100)
+    description: str = Field(..., min_length=10, max_length=500)
+    address: str = Field(..., min_length=5, max_length=150)
 
-# --- ESQUEMA DE ACTUALIZACIÓN MEJORADO ---
+# Modelo para ACTUALIZAR. Los campos son opcionales.
 class BusinessUpdate(BaseModel):
-    name: Optional[str] = Field(None, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
-    address: Optional[str] = None
-    logo_url: Optional[str] = None
+    name: Optional[str] = Field(None, min_length=3, max_length=100)
+    description: Optional[str] = Field(None, min_length=10, max_length=500)
+    address: Optional[str] = Field(None, min_length=5, max_length=150)
     photos: Optional[List[str]] = None
     categories: Optional[List[str]] = None
 
-class BusinessInDB(BusinessBase):
+# Modelo de RESPUESTA. Hereda del base para no fallar con datos antiguos.
+class BusinessResponse(BusinessBase):
     id: PyObjectId = Field(alias="_id")
     owner_id: PyObjectId
+    photos: List[str]
+    categories: List[str]
+    status: str
 
     class Config:
+        from_attributes = True
         populate_by_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
-
-class BusinessResponse(BusinessBase):
-    id: str = Field(..., alias="_id")
-    owner_id: str
-
-    @field_validator("id", "owner_id", mode='before')
-    @classmethod
-    def convert_objectid_to_str(cls, v: Any) -> str:
-        if isinstance(v, ObjectId):
-            return str(v)
-        return v
-    
-    class Config:
-        populate_by_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+        json_encoders = {PyObjectId: str}

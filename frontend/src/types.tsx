@@ -3,8 +3,8 @@
 export type Page = 'home' | 'register' | 'login' | 'profile' | 'appointments' | 'admin';
 
 export interface Category {
-    id: string; // Es mejor usar string para los IDs de MongoDB
-    _id?: string;
+    id: string;
+    _id?: string; // Es útil tener ambos por compatibilidad
     name: string;
 }
 
@@ -43,9 +43,11 @@ export interface UserResponse {
     owner_request?: OwnerRequest;
 }
 
-// --- INTERFAZ DE BUSINESS ACTUALIZADA ---
+// --- INTERFAZ DE BUSINESS CORREGIDA ---
+// Añadimos _id como opcional para asegurar que siempre tengamos una referencia.
 export interface Business {
     id: string;
+    _id?: string; // Campo de respaldo
     owner_id: string;
     name: string;
     description: string;
