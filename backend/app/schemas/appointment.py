@@ -14,7 +14,7 @@ class AppointmentBase(BaseModel):
 # --- ESQUEMA DE CREACIÓN CORREGIDO Y FINAL ---
 class AppointmentCreate(BaseModel):
     service_id: str
-    appointment_time: str # Recibimos la fecha como texto desde el frontend
+    appointment_time: datetime 
 
     @field_validator('appointment_time', mode='before')
     @classmethod
