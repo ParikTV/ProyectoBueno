@@ -1,5 +1,3 @@
-# app/api/endpoints/appointments.py
-
 from fastapi import APIRouter, Depends, status
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import List
@@ -28,13 +26,9 @@ async def create_appointment(
         appointment_time=appointment_in.appointment_time
     )
     
-    # --- CAMBIO FINAL AQUÍ ---
-    # Forzamos la validación del modelo. Esto asegura que Pydantic
-    # use el alias y convierta '_id' en 'id' en la respuesta JSON.
     return AppointmentResponse.model_validate(appointment)
 
 
-# --- El resto del código no cambia ---
 @router.get("/me", response_model=List[AppointmentResponse])
 async def get_my_appointments(
     db: AsyncIOMotorDatabase = Depends(get_database),

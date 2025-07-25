@@ -1,4 +1,3 @@
-# app/schemas/user.py
 
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
@@ -6,13 +5,11 @@ from datetime import datetime
 from .utils import PyObjectId
 from bson import ObjectId
 
-# --- ¡CAMBIO AQUÍ! ---
-# Añadimos los nuevos campos al schema de la solicitud
 class OwnerRequestSchema(BaseModel):
     business_name: str
     business_description: str
-    address: str  # Campo requerido
-    logo_url: Optional[str] = None # Campo opcional
+    address: str  
+    logo_url: Optional[str] = None 
     status: str = 'pending'
 
 class UserBase(BaseModel):

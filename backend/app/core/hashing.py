@@ -1,4 +1,3 @@
-# app/core/hashing.py
 
 from passlib.context import CryptContext
 

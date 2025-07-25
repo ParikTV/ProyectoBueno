@@ -1,11 +1,9 @@
-# app/api/api.py
 
 from fastapi import APIRouter
 from .endpoints import login, users, businesses, categories, appointments
 
 api_router = APIRouter()
 
-# Incluir los routers de los diferentes endpoints
 api_router.include_router(login.router, prefix="/login", tags=["login"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(businesses.router, prefix="/businesses", tags=["businesses"])

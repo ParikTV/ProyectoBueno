@@ -1,5 +1,3 @@
-# app/crud/crud_category_request.py
-
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from datetime import datetime
@@ -23,26 +21,21 @@ async def get_category_request_by_id(db: AsyncIOMotorDatabase, request_id: str):
     return await db["category_requests"].find_one({"_id": ObjectId(request_id)})
 
 async def approve_category_request_and_create_category(db: AsyncIOMotorDatabase, request_id: str):
-    # 1. Obtener la solicitud
     request = await get_category_request_by_id(db, request_id)
     if not request:
         return None
 
-    # 2. Verificar si la categoría ya existe
     existing_category = await db["categories"].find_one({"name": request["category_name"]})
     if existing_category:
-        # La categoría ya existe, solo marcamos la solicitud como aprobada
         await db["category_requests"].update_one(
             {"_id": ObjectId(request_id)},
             {"$set": {"status": "approved"}}
         )
         return await db["categories"].find_one({"name": request["category_name"]})
 
-    # 3. Crear la nueva categoría
     new_category = {"name": request["category_name"]}
     await db["categories"].insert_one(new_category)
     
-    # 4. Actualizar el estado de la solicitud
     await db["category_requests"].update_one(
         {"_id": ObjectId(request_id)},
         {"$set": {"status": "approved"}}

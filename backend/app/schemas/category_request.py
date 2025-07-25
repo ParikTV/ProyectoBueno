@@ -1,4 +1,3 @@
-# app/schemas/category_request.py
 
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Literal, Any
@@ -12,7 +11,7 @@ class CategoryRequestBase(BaseModel):
     evidence_url: Optional[str] = None
 
 class CategoryRequestCreate(CategoryRequestBase):
-    pass # El owner_id se añade en el backend
+    pass 
 
 class CategoryRequestInDB(CategoryRequestBase):
     id: PyObjectId = Field(alias="_id")

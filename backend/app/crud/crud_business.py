@@ -1,11 +1,9 @@
-# app/crud/crud_business.py
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from datetime import datetime
 from app.schemas.business import BusinessCreate, BusinessUpdate, Schedule
 
-# --- ¡NUEVA FUNCIÓN AÑADIDA! ---
 async def get_business(db: AsyncIOMotorDatabase, business_id: str):
     """
     Busca un único negocio en la base de datos por su ID.
@@ -22,27 +20,23 @@ async def get_published_businesses(db: AsyncIOMotorDatabase):
     return await cursor.to_list(length=None)
 
 
-# --- ¡FUNCIÓN CORREGIDA! ---
 async def create_business(db: AsyncIOMotorDatabase, business_in: BusinessCreate, owner_id: str):
     """
     Crea un nuevo negocio en la base de datos.
     """
     business_data = business_in.model_dump()
     
-    # --- LÓGICA CORREGIDA AQUÍ ---
-    # 1. Extraemos el logo_url si existe.
+
     logo_url = business_data.get("logo_url")
     
-    # 2. Creamos la lista de fotos. Si hay un logo_url, lo añadimos.
     initial_photos = [logo_url] if logo_url else []
     
-    # 3. Actualizamos el diccionario con los datos por defecto.
     business_data.update({
         "owner_id": ObjectId(owner_id),
         "status": "draft",
-        "photos": initial_photos, # Usamos la lista que acabamos de crear.
+        "photos": initial_photos, 
         "categories": [],
-        "schedule": Schedule().model_dump(), # Horario por defecto
+        "schedule": Schedule().model_dump(), 
         "created_at": datetime.utcnow()
     })
     
@@ -113,8 +107,7 @@ async def get_available_slots_for_day(db: AsyncIOMotorDatabase, business_id: str
     if not day_schedule or not day_schedule.get("is_active"):
         return []
 
-    # Lógica para generar los slots...
-    # (Esta es una simplificación, puedes expandirla)
+
     open_time = datetime.strptime(day_schedule["open_time"], "%H:%M").time()
     close_time = datetime.strptime(day_schedule["close_time"], "%H:%M").time()
     slot_duration = day_schedule["slot_duration_minutes"]

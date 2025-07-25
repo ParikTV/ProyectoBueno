@@ -1,9 +1,8 @@
-# app/schemas/service.py
 
 from pydantic import BaseModel, Field, field_validator
 from bson import ObjectId
 from typing import Any
-from .user import PyObjectId # Reutilizamos el validador de ObjectId
+from .user import PyObjectId 
 
 class ServiceBase(BaseModel):
     name: str
@@ -22,8 +21,6 @@ class ServiceInDB(ServiceBase):
 class ServiceResponse(ServiceBase):
     id: str = Field(..., alias="_id")
 
-    # --- LA SOLUCIÓN ESTÁ AQUÍ ---
-    # Este validador convierte el ObjectId a un string antes de la validación.
     @field_validator("id", mode='before')
     @classmethod
     def convert_objectid_to_str(cls, v):

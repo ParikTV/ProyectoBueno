@@ -1,4 +1,3 @@
-# app/crud/crud_category.py
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.schemas.category import CategoryCreate

@@ -1,9 +1,7 @@
-# app/schemas/business.py
 
 from pydantic import BaseModel, Field
 from typing import Optional, List
 
-# No hay necesidad de importar ObjectId o field_validator aquí
 
 class ScheduleDay(BaseModel):
     is_active: bool = False
@@ -37,8 +35,6 @@ class BusinessUpdate(BaseModel):
     photos: Optional[List[str]] = None
     categories: Optional[List[str]] = None
 
-# --- MODELO SIMPLIFICADO ---
-# Este modelo ahora solo define la estructura de salida, sin conversiones automáticas.
 class BusinessResponse(BusinessBase):
     id: str
     owner_id: str

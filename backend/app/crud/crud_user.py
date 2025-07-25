@@ -1,4 +1,3 @@
-# app/crud/crud_user.py
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
@@ -21,10 +20,8 @@ async def get_user_by_id(db: AsyncIOMotorDatabase, user_id: str):
 async def create_user(db: AsyncIOMotorDatabase, user: UserCreate):
     hashed_password = get_password_hash(user.password)
     user_data = user.model_dump()
-    # --- ¡CORRECCIÓN CRÍTICA! ---
-    # Guardamos en 'hashed_password' en lugar de 'password'
     user_data["hashed_password"] = hashed_password
-    del user_data["password"] # Borramos la contraseña en texto plano
+    del user_data["password"] 
     
     user_data["role"] = "usuario"
     user_data["created_at"] = datetime.utcnow()

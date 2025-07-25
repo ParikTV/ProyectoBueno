@@ -1,5 +1,3 @@
-# app/api/endpoints/users.py
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 from motor.motor_asyncio import AsyncIOMotorDatabase
@@ -12,7 +10,6 @@ from app.core.security import get_current_user, get_current_admin_user
 
 router = APIRouter()
 
-# [PÚBLICO] Crear un nuevo usuario
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(user_in: UserCreate, db: AsyncIOMotorDatabase = Depends(get_database)):
     existing_user = await crud_user.get_user_by_email(db, email=user_in.email)
@@ -24,19 +21,16 @@ async def create_user(user_in: UserCreate, db: AsyncIOMotorDatabase = Depends(ge
     user = await crud_user.create_user(db, user=user_in)
     return user
 
-# [AUTENTICADO] Obtener el perfil del usuario actual
 @router.get("/me", response_model=UserResponse)
 async def read_users_me(current_user: UserResponse = Depends(get_current_user)):
     return current_user
 
-# [AUTENTICADO] Actualizar el perfil del usuario actual
 @router.put("/me", response_model=UserResponse)
 async def update_user_me(user_in: UserUpdate, db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
     user_id = str(current_user.id)
     updated_user = await crud_user.update_user(db, user_id=user_id, user_in=user_in)
     return updated_user
 
-# [AUTENTICADO] Solicitar rol de dueño
 @router.post("/me/request-owner", response_model=UserResponse)
 async def request_owner_role(
     request_data: OwnerRequestSchema,
@@ -47,7 +41,6 @@ async def request_owner_role(
     updated_user = await crud_user.create_owner_request(db, user_id=user_id, request_data=request_data)
     return updated_user
 
-# --- Rutas de Administrador ---
 
 @router.get("/admin/owner-requests", response_model=List[UserResponse])
 async def get_pending_owner_requests(db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_admin_user)):

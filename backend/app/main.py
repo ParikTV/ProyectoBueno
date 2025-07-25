@@ -5,21 +5,19 @@ from app.db.session import connect_to_mongo, close_mongo_connection
 
 app = FastAPI(title="Store Service API")
 
-# --- ESTA ES LA CONFIGURACIÓN CORRECTA DE CORS ---
-# Orígenes permitidos (tu frontend)
+
 origins = [
     "http://localhost",
-    "http://localhost:5173", # La dirección de tu frontend con Vite/React
+    "http://localhost:5173", 
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True, # Esencial para que las cookies/tokens funcionen
-    allow_methods=["*"],    # Permite todos los métodos (GET, POST, etc.)
-    allow_headers=["*"],    # Permite todas las cabeceras, incluyendo 'Authorization'
+    allow_credentials=True, 
+    allow_methods=["*"],    
+    allow_headers=["*"],    
 )
-# --- FIN DE LA CONFIGURACIÓN DE CORS ---
 
 
 @app.on_event("startup")

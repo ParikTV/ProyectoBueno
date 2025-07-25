@@ -1,5 +1,3 @@
-# app/core/security.py
-
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
@@ -11,18 +9,15 @@ from app.db.session import get_database
 from app.schemas.user import UserResponse
 from app.core.config import settings
 
-# --- Configuración de Seguridad ---
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/login/access-token")
 
-# --- Funciones de Hashing y Verificación ---
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
-# --- Funciones de Token JWT ---
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
@@ -33,7 +28,6 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
-# --- Dependencias de Seguridad ---
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: AsyncIOMotorDatabase = Depends(get_database)
@@ -41,7 +35,7 @@ async def get_current_user(
     """
     Decodifica el token JWT, obtiene el email y busca al usuario en la BD.
     """
-    from app.crud.crud_user import get_user_by_email # Importación local para evitar ciclos
+    from app.crud.crud_user import get_user_by_email 
 
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,

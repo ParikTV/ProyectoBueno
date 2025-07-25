@@ -1,5 +1,3 @@
-# app/api/endpoints/category_requests.py
-
 from fastapi import APIRouter, Depends, status, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from app.db.session import get_database
@@ -24,6 +22,5 @@ async def submit_category_request(
     
     request = await create_category_request(db, request_data_with_owner)
     
-    # --- CAMBIO AQUÍ ---
-    # Validamos el diccionario de la BD con nuestro modelo antes de devolverlo
+   
     return CategoryRequestResponse.model_validate(request)

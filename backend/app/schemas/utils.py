@@ -1,4 +1,3 @@
-# app/schemas/utils.py
 
 from bson import ObjectId
 from pydantic import GetCoreSchemaHandler
@@ -38,5 +37,4 @@ class PyObjectId(ObjectId):
     def __get_pydantic_json_schema__(
         cls, core_schema: core_schema.CoreSchema, handler: GetCoreSchemaHandler
     ):
-        # Representa el ObjectId como un string en la documentación de OpenAPI
         return {"type": "string"}

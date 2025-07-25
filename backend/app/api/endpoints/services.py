@@ -1,4 +1,3 @@
-# app/api/endpoints/services.py
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
@@ -15,7 +14,6 @@ from .users import get_current_admin_user
 
 router = APIRouter()
 
-# --- Endpoint público para ver todos los negocios publicados ---
 @router.get("/")
 async def get_all_published_businesses(db: AsyncIOMotorDatabase = Depends(get_database)):
     businesses_from_db = await crud_business.get_published_businesses(db)
@@ -35,13 +33,11 @@ async def get_all_published_businesses(db: AsyncIOMotorDatabase = Depends(get_da
     return JSONResponse(content=response_data)
 
 
-# --- Dependencia para Dueños ---
 async def get_current_owner_user(current_user: UserResponse = Depends(get_current_user)):
     if current_user.role not in ["dueño", "admin"]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acción solo para dueños o administradores")
     return current_user
 
-# --- Endpoints para Dueños autenticados ---
 
 @router.get("/my-businesses", response_model=List[BusinessResponse])
 async def get_my_businesses(
@@ -101,11 +97,10 @@ async def publish_my_business(
         raise HTTPException(status_code=404, detail="El negocio no pudo ser publicado.")
     return BusinessResponse.model_validate(published)
 
-# --- ENDPOINT DE HORARIOS DISPONIBLES (VERSIÓN FINAL Y ROBUSTA) ---
 @router.get("/{business_id}/available-slots")
 async def get_available_slots(
     business_id: str,
-    date: str, # Formato YYYY-MM-DD
+    date: str, 
     db: AsyncIOMotorDatabase = Depends(get_database)
 ):
     try:
@@ -121,7 +116,6 @@ async def get_available_slots(
         if not schedule_day or not schedule_day.get("is_active"):
             return []
 
-        # --- Bloque de validación a prueba de errores ---
         open_time_str = schedule_day.get("open_time")
         close_time_str = schedule_day.get("close_time")
         slot_duration = schedule_day.get("slot_duration_minutes")
@@ -136,7 +130,6 @@ async def get_available_slots(
 
         open_time = datetime.strptime(open_time_str, "%H:%M").time()
         close_time = datetime.strptime(close_time_str, "%H:%M").time()
-        # --- Fin del bloque de validación ---
 
         all_slots = []
         current_time = datetime.combine(selected_date, open_time)
@@ -158,8 +151,7 @@ async def get_available_slots(
         return available_slots
 
     except Exception as e:
-        # Si CUALQUIER error inesperado ocurre, se imprime en la consola del servidor
-        # y se devuelve una lista vacía para que el frontend no se quede atascado.
+     
         print(f"ERROR CRÍTICO al calcular horarios para {business_id} en {date}: {e}")
         return []
 
@@ -171,7 +163,6 @@ async def get_single_business(business_id: str, db: AsyncIOMotorDatabase = Depen
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
     return BusinessResponse.model_validate(business)
 
-# --- Endpoints solo para Administradores ---
 @router.post("/admin/assign-business", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
 async def admin_create_and_assign_business(
     owner_id: str,

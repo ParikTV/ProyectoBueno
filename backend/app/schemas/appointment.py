@@ -1,4 +1,3 @@
-# app/schemas/appointment.py
 
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
@@ -13,10 +12,10 @@ class AppointmentCreate(BaseModel):
 class AppointmentResponse(BaseModel):
     id: str = Field(..., alias="_id")
     user_id: str
-    business_id: str # <--- CAMBIO AQUÍ
+    business_id: str 
     appointment_time: datetime
 
-    @field_validator("id", "user_id", "business_id", mode='before') # <--- CAMBIO AQUÍ
+    @field_validator("id", "user_id", "business_id", mode='before') 
     @classmethod
     def convert_objectid_to_str(cls, v: Any) -> str:
         if isinstance(v, ObjectId):
