@@ -32,24 +32,25 @@ async def get_all_published_businesses(db: AsyncIOMotorDatabase = Depends(get_da
     businesses_from_db = await crud_business.get_published_businesses(db)
     return [convert_business_to_response(b) for b in businesses_from_db]
 
+# --- ¡RUTA CORREGIDA Y REORDENADA! ---
+# 1. Se mueve esta ruta específica ANTES de la ruta genérica con {business_id}.
+# 2. Se elimina la barra final de "/my-businesses/" para que sea "/my-businesses".
+@router.get("/my-businesses", response_model=List[BusinessResponse])
+async def get_my_businesses(db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
+    businesses = await crud_business.get_businesses_by_owner(db, str(current_user.id))
+    return [convert_business_to_response(b) for b in businesses]
+
+# --- La ruta genérica ahora va DESPUÉS de las rutas específicas ---
 @router.get("/{business_id}", response_model=BusinessResponse)
 async def get_business_by_id(business_id: str, db: AsyncIOMotorDatabase = Depends(get_database)):
     if not ObjectId.is_valid(business_id):
         raise HTTPException(status_code=400, detail="ID de negocio inválido")
-    # CORREGIDO: Usando la nueva función get_business
-    business = await crud_business.get_business(db, business_id) 
+    business = await crud_business.get_business(db, business_id)
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
     return convert_business_to_response(business)
 
-# --- ¡RUTA CORREGIDA! ---
-@router.get("/my-businesses/", response_model=List[BusinessResponse])
-async def get_my_businesses(db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
-    # CORREGIDO: Se cambió 'get_businesses_by_owner_id' por 'get_businesses_by_owner'
-    businesses = await crud_business.get_businesses_by_owner(db, str(current_user.id))
-    return [convert_business_to_response(b) for b in businesses]
-
-# ... (El resto de las funciones de este archivo se quedan igual)
+# --- El resto de las rutas permanecen igual ---
 
 @router.post("/my-business/", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
 async def create_my_business(business_in: BusinessCreate, db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
