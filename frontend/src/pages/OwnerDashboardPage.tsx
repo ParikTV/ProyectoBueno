@@ -7,8 +7,9 @@ import { Business, Category, Schedule, ScheduleDay } from '@/types';
 import commonStyles from '@/styles/Common.module.css';
 import { LocationPicker } from '@/components/LocationPicker';
 
-// --- Componente para registrar un NUEVO negocio ---
+// --- Componente para registrar un NUEVO negocio (sin cambios) ---
 const BusinessRegistrationForm: React.FC<{ onSave: () => void; onCancel: () => void; }> = ({ onSave, onCancel }) => {
+    // ... (este componente no necesita cambios)
     const { token } = useAuth();
     const [formData, setFormData] = useState({ name: '', description: '', address: ''});
     const [error, setError] = useState('');
@@ -72,7 +73,8 @@ const BusinessRegistrationForm: React.FC<{ onSave: () => void; onCancel: () => v
     );
 };
 
-// --- Componente para el formulario de EDICIÓN del negocio ---
+
+// --- Componente para el formulario de EDICIÓN del negocio (CON CAMBIOS) ---
 const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCancel: () => void; }> = ({ business, onSave, onCancel }) => {
     const { token } = useAuth();
     const [formData, setFormData] = useState<Business>(business);
@@ -144,7 +146,12 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
                 
                 <div className={commonStyles.formGroup}>
                     <label>Dirección del Negocio (Haz clic en el mapa para actualizar)</label>
-                    <LocationPicker onLocationSelect={handleLocationSelect} />
+                    {/* --- ¡AQUÍ ESTÁ EL CAMBIO! --- */}
+                    {/* Le pasamos la dirección actual como 'initialAddress' */}
+                    <LocationPicker 
+                        onLocationSelect={handleLocationSelect}
+                        initialAddress={formData.address}
+                    />
                     <input type="text" value={formData.address} readOnly placeholder="La dirección aparecerá aquí..." style={{marginTop: '0.5rem', backgroundColor: '#f9fafb'}}/>
                 </div>
 
@@ -157,8 +164,10 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
     );
 };
 
-// --- Componente de Horario ---
+
+// --- Componente de Horario (sin cambios) ---
 const ManageScheduleForm: React.FC<{ business: Business; onSave: () => void; onCancel: () => void; }> = ({ business, onSave, onCancel }) => {
+    // ... (este componente no necesita cambios)
     const { token } = useAuth();
     const [schedule, setSchedule] = useState<Schedule>(business.schedule || {
         monday: { is_active: false, open_time: '09:00', close_time: '17:00', slot_duration_minutes: 30, capacity_per_slot: 1 },
@@ -235,8 +244,10 @@ const ManageScheduleForm: React.FC<{ business: Business; onSave: () => void; onC
     );
 };
 
-// --- Componente principal de la página ---
+
+// --- Componente principal de la página (sin cambios) ---
 export const OwnerDashboardPage: React.FC = () => {
+    // ... (este componente no necesita cambios)
     const { token } = useAuth();
     const [businesses, setBusinesses] = useState<Business[]>([]);
     const [isLoading, setIsLoading] = useState(true);
