@@ -7,7 +7,6 @@ import styles from '@/styles/DetailsPage.module.css';
 import commonStyles from '@/styles/Common.module.css';
 import { useAuth } from '@/hooks/useAuth';
 import { ExtendedPage } from '@/App';
-// Importamos el componente para mostrar el mapa
 import { LocationDisplay } from '@/components/LocationDisplay';
 
 // --- MODAL DE RESERVA (SIN CAMBIOS) ---
@@ -121,7 +120,7 @@ const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookin
 };
 
 
-// --- ¡COMPONENTE PRINCIPAL DE LA PÁGINA ACTUALIZADO! ---
+// --- COMPONENTE PRINCIPAL DE LA PÁGINA ---
 interface BusinessDetailsPageProps { 
     businessId: string; 
     navigateTo: (page: ExtendedPage) => void; 
@@ -152,6 +151,9 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
     if (!business) return <div style={{textAlign: 'center', padding: '2rem'}}>Negocio no encontrado.</div>;
     
     const canBook = business.status === 'published' && !!business.schedule;
+    
+    // --- LÓGICA DE IMAGEN CORREGIDA AQUÍ ---
+    const displayImage = business.photos?.[0] || business.logo_url || 'https://placehold.co/600x400/e2e8f0/4a5568?text=Sin+Imagen';
 
     return (
         <div className={styles.pageWrapper}>
@@ -163,19 +165,16 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
                 />
             )}
 
-            {/* --- NUEVO LAYOUT DE 2 COLUMNAS --- */}
             <div className={styles.detailsContainer}>
-                {/* Columna Izquierda: Imagen y Fotos Adicionales */}
                 <div className={styles.imageColumn}>
                     <img 
-                        src={business.photos?.[0] || 'https://placehold.co/600x400/e2e8f0/4a5568?text=Sin+Imagen'} 
+                        // Usamos la variable con la lógica corregida
+                        src={displayImage} 
                         alt={business.name} 
                         className={styles.mainImage}
                     />
-                    {/* Aquí podrías agregar una galería de fotos si hay más de una */}
                 </div>
 
-                {/* Columna Derecha: Información y Mapa */}
                 <div className={styles.infoColumn}>
                     <span className={styles.category}>{business.categories.join(', ') || 'Sin Categoría'}</span>
                     <h1>{business.name}</h1>
@@ -205,7 +204,6 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
                         <p className={styles.description}>{business.description}</p>
                     </div>
 
-                    {/* --- MAPA DE UBICACIÓN --- */}
                     <div className={styles.section}>
                         <h4>Ubicación</h4>
                         <LocationDisplay address={business.address} />
