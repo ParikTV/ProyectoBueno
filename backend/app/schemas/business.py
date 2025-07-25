@@ -1,15 +1,14 @@
 # app/schemas/business.py
 
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict
+from typing import Optional, List
 
-from .utils import PyObjectId
+# No hay necesidad de importar ObjectId o field_validator aquí
 
-# --- NUEVOS MODELOS PARA EL HORARIO ---
 class ScheduleDay(BaseModel):
     is_active: bool = False
-    open_time: str = "09:00"  # Formato HH:MM
-    close_time: str = "17:00" # Formato HH:MM
+    open_time: str = "09:00"
+    close_time: str = "17:00"
     slot_duration_minutes: int = 30
     capacity_per_slot: int = 1
 
@@ -22,34 +21,31 @@ class Schedule(BaseModel):
     saturday: ScheduleDay = Field(default_factory=ScheduleDay)
     sunday: ScheduleDay = Field(default_factory=ScheduleDay)
 
-# --- MODELOS EXISTENTES (ACTUALIZADOS) ---
 class BusinessBase(BaseModel):
-    name: str
-    description: str
-    address: str
+    name: str = Field(..., min_length=3)
+    description: str = Field(..., min_length=10)
+    address: str = Field(..., min_length=5)
+    logo_url: Optional[str] = None
 
-class BusinessCreate(BaseModel):
-    name: str = Field(..., min_length=3, max_length=100)
-    description: str = Field(..., min_length=10, max_length=500)
-    address: str = Field(..., min_length=5, max_length=150)
+class BusinessCreate(BusinessBase):
+    pass
 
 class BusinessUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=3, max_length=100)
-    description: Optional[str] = Field(None, min_length=10, max_length=500)
-    address: Optional[str] = Field(None, min_length=5, max_length=150)
+    name: Optional[str] = Field(None, min_length=3)
+    description: Optional[str] = Field(None, min_length=10)
+    address: Optional[str] = Field(None, min_length=5)
     photos: Optional[List[str]] = None
     categories: Optional[List[str]] = None
-    schedule: Optional[Schedule] = None # <--- AÑADIDO
 
+# --- MODELO SIMPLIFICADO ---
+# Este modelo ahora solo define la estructura de salida, sin conversiones automáticas.
 class BusinessResponse(BusinessBase):
-    id: PyObjectId = Field(alias="_id")
-    owner_id: PyObjectId
+    id: str
+    owner_id: str
     photos: List[str]
     categories: List[str]
     status: str
-    schedule: Optional[Schedule] = None # <--- AÑADIDO
+    schedule: Optional[Schedule] = None
 
     class Config:
         from_attributes = True
-        populate_by_name = True
-        json_encoders = {PyObjectId: str}
