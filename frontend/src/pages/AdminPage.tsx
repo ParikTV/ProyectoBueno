@@ -6,10 +6,8 @@ import { API_BASE_URL } from '@/services/api';
 import { UserResponse, CategoryRequest } from '@/types';
 import commonStyles from '@/styles/Common.module.css';
 import adminStyles from '@/styles/AdminPage.module.css';
-// ¡Importamos el componente de mapa!
 import { LocationDisplay } from '@/components/LocationDisplay';
 
-// --- Interfaces para compatibilidad con _id de MongoDB (sin cambios) ---
 interface UserWithMongoId extends UserResponse {
     _id?: string;
 }
@@ -17,7 +15,6 @@ interface CategoryRequestWithMongoId extends CategoryRequest {
     _id?: string;
 }
 
-// --- Componente: Formulario para crear y asignar negocio (sin cambios) ---
 const AdminCreateBusinessForm: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
     const { token } = useAuth();
     const [owners, setOwners] = useState<UserWithMongoId[]>([]);
@@ -81,7 +78,7 @@ const AdminCreateBusinessForm: React.FC<{ onUpdate: () => void }> = ({ onUpdate 
 
     return (
         <div className={commonStyles.formContainer} style={{maxWidth: '100%'}}>
-            <h3 className={adminStyles.sectionTitle} style={{marginTop: 0, border: 'none'}}>Crear y Asignar Negocio</h3>
+            <h3 className={adminStyles.formTitle}>Crear y Asignar Negocio</h3>
             <form onSubmit={handleSubmit}>
                 <div className={commonStyles.formGroup}>
                     <label>Asignar a Dueño</label>
@@ -101,8 +98,6 @@ const AdminCreateBusinessForm: React.FC<{ onUpdate: () => void }> = ({ onUpdate 
     );
 };
 
-
-// --- Componente: Formulario para crear categoría (sin cambios) ---
 const AdminCreateCategoryForm: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
     const { token } = useAuth();
     const [name, setName] = useState('');
@@ -137,7 +132,7 @@ const AdminCreateCategoryForm: React.FC<{ onUpdate: () => void }> = ({ onUpdate 
     
     return (
         <div className={commonStyles.formContainer} style={{maxWidth: '100%'}}>
-            <h3 className={adminStyles.sectionTitle} style={{marginTop: 0, border: 'none'}}>Crear Nueva Categoría</h3>
+            <h3 className={adminStyles.formTitle}>Crear Nueva Categoría</h3>
             <form onSubmit={handleSubmit}>
                 <div className={commonStyles.formGroup}><label>Nombre de la Categoría</label><input type="text" value={name} onChange={e => setName(e.target.value)} required /></div>
                 <button type="submit" className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} disabled={isLoading}>{isLoading ? 'Creando...' : 'Crear Categoría'}</button>
@@ -148,8 +143,6 @@ const AdminCreateCategoryForm: React.FC<{ onUpdate: () => void }> = ({ onUpdate 
     );
 };
 
-
-// --- ¡COMPONENTE DEL MODAL TOTALMENTE ACTUALIZADO! ---
 const RequestDetailsModal: React.FC<{
     user: UserWithMongoId;
     onClose: () => void;
@@ -191,13 +184,11 @@ const RequestDetailsModal: React.FC<{
                     <p>{business_description}</p>
                 </div>
                 
-                {/* Mostramos el mapa con la dirección */}
                 <div className={adminStyles.detailItem}>
                     <span>Ubicación en el Mapa</span>
                     <LocationDisplay address={address} />
                 </div>
 
-                {/* Mostramos el logo si existe */}
                 {logo_url && (
                     <div className={adminStyles.detailItem}>
                         <span>Logo/Imagen Propuesta</span>
@@ -215,8 +206,6 @@ const RequestDetailsModal: React.FC<{
     );
 };
 
-
-// --- Componente principal de la Página de Admin (sin cambios) ---
 export const AdminPage: React.FC = () => {
     const { token, isAdmin, logout } = useAuth();
     
@@ -329,7 +318,7 @@ export const AdminPage: React.FC = () => {
             {error && <p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p>}
             {success && <p className={`${commonStyles.alert} ${commonStyles.alertSuccess}`}>{success}</p>}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '3rem' }}>
+            <div className={adminStyles.formGrid}>
                 <AdminCreateBusinessForm onUpdate={() => setUpdateTrigger(t => t + 1)} />
                 <AdminCreateCategoryForm onUpdate={() => setUpdateTrigger(t => t + 1)} />
             </div>

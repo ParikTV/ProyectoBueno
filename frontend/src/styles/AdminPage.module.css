@@ -1,206 +1,68 @@
 /* src/styles/AdminPage.module.css */
 
 .pageContainer {
-  max-width: 1000px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem 1rem;
 }
 
 .pageHeader {
   font-size: 2.25rem;
-  font-weight: bold;
+  font-weight: 800;
   color: #1f2937;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 1rem;
 }
 
-.actionSection {
-  margin-bottom: 2rem;
-  text-align: right;
-}
-
-.sectionTitle {
-  font-size: 1.75rem;
-  font-weight: bold;
-  color: #1f2937;
-  margin-top: 3rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 0.5rem;
-}
-
-.serviceList {
+/* --- ESTILO CORREGIDO PARA LOS FORMULARIOS --- */
+.formGrid {
   display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Responsive grid */
+  grid-template-columns: 1fr; /* Siempre una columna */
+  gap: 2rem;
+  margin: 0 auto 3rem auto; /* Centra el grid y le da margen inferior */
+  max-width: 700px; /* Limita el ancho máximo para que no se vea muy estirado */
 }
 
-.serviceCard {
-  background-color: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.serviceCardContent {
-  padding: 1.5rem;
-  flex-grow: 1;
-}
-
-.serviceCardContent h4 {
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: #111827;
-  margin: 0 0 0.5rem 0;
-}
-
-.serviceCardContent p {
-  margin: 0.5rem 0;
-  color: #6b7280;
-}
-
-.serviceImage {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-  margin-top: 1rem;
-  border-radius: 0.5rem;
-}
-
-.serviceCardActions {
-  background-color: #f9fafb;
-  padding: 1rem;
-  display: flex;
-  justify-content: flex-end; /* Alinea los botones a la derecha */
-  gap: 0.75rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-/* Necesario para el botón de eliminar, ya que Common.module.css no tiene un estilo 'danger' */
-.buttonDanger {
-  background-color: #ef4444; /* rojo */
-  color: white;
-  font-weight: bold;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  border: none;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: background-color 0.3s;
-}
-
-.buttonDanger:hover {
-  background-color: #dc2626; /* rojo más oscuro al pasar el ratón */
-}
-
-.noServices {
-  text-align: center;
-  padding: 3rem;
-  background-color: white;
-  border-radius: 0.75rem;
-  border: 2px dashed #e5e7eb;
-  color: #6b7280;
-  font-size: 1.125rem;
-}
-/* --- Estilos del Modal de Detalles --- */
-.modalBackdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(17, 24, 39, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    padding: 1rem;
-}
-
-.modalContent {
-    background-color: white;
-    padding: 2.5rem;
-    border-radius: 0.75rem;
-    width: 100%;
-    max-width: 600px;
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modalContent h2 {
-    margin-top: 0;
-    font-size: 1.875rem;
-    color: #111827;
-    margin-bottom: 2rem;
-    border-bottom: 1px solid #e5e7eb;
-    padding-bottom: 1rem;
-}
-
-.detailSection {
-    margin-bottom: 1.5rem;
-}
-
-.detailSection h4 {
+/* Título dentro de los formularios del grid */
+.formTitle {
     font-size: 1.25rem;
-    color: #374151;
+    font-weight: 600;
     margin-top: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #f3f4f6;
 }
 
-.detailSection p {
-    margin: 0.5rem 0;
-    font-size: 1rem;
-    color: #4b5563;
-}
-
-.detailSection p strong {
-    color: #1f2937;
-    display: inline-block;
-    min-width: 150px;
-}
-/* src/styles/AdminPage.module.css */
-
-.pageContainer {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.pageHeader {
-  font-size: 2.25rem;
-  font-weight: bold;
-  color: #1f2937;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 1rem;
-}
-
+/* --- Títulos de sección --- */
 .sectionTitle {
   font-size: 1.75rem;
-  font-weight: bold;
-  color: #1f2937;
+  font-weight: 700;
+  color: #111827;
   margin-top: 3rem;
   margin-bottom: 1.5rem;
   border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 0.5rem;
+  padding-bottom: 0.75rem;
 }
 
+/* --- Contenedor de las listas de solicitudes --- */
 .serviceList {
   display: grid;
   gap: 1.5rem;
 }
 
+/* --- Estilos para las tarjetas de solicitud --- */
 .serviceCard {
   background-color: white;
   border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: box-shadow 0.2s;
+}
+.serviceCard:hover {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
 .serviceCardContent {
@@ -210,19 +72,20 @@
 
 .serviceCardContent h4 {
   font-size: 1.25rem;
-  font-weight: bold;
+  font-weight: 600;
   color: #111827;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.75rem 0;
 }
 
 .serviceCardContent p {
   margin: 0.5rem 0;
   color: #6b7280;
+  line-height: 1.5;
 }
 
 .serviceCardActions {
   background-color: #f9fafb;
-  padding: 1rem;
+  padding: 1rem 1.5rem;
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
@@ -240,14 +103,14 @@
 .noServices {
   text-align: center;
   padding: 3rem;
-  background-color: white;
+  background-color: #fff;
   border-radius: 0.75rem;
   border: 2px dashed #e5e7eb;
   color: #6b7280;
   font-size: 1.125rem;
 }
 
-/* --- ¡NUEVOS ESTILOS PARA EL MODAL! --- */
+/* --- Estilos del Modal (sin cambios) --- */
 .modalBackdrop {
     position: fixed;
     top: 0;
@@ -277,171 +140,6 @@
     margin-top: 0;
     font-size: 1.875rem;
     color: #111827;
-    margin-bottom: 1.5rem;
-}
-
-.detailGrid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    margin-bottom: 1rem;
-}
-
-.detailItem {
-    margin-bottom: 1rem;
-}
-
-.detailItem span {
-    display: block;
-    font-size: 0.875rem;
-    color: #6b7280;
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-}
-
-.detailItem p {
-    margin: 0;
-    font-size: 1rem;
-    color: #1f2937;
-}
-
-.logoPreview {
-    max-width: 100%;
-    max-height: 200px;
-    object-fit: contain;
-    border-radius: 8px;
-    margin-top: 0.5rem;
-    border: 1px solid #e5e7eb;
-}
-/* src/styles/AdminPage.module.css */
-
-.pageContainer {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem 1rem;
-}
-
-.pageHeader {
-  font-size: 2.25rem;
-  font-weight: bold;
-  color: #1f2937;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 1rem;
-}
-
-.actionSection {
-  margin-bottom: 2rem;
-  text-align: right;
-}
-
-.sectionTitle {
-  font-size: 1.75rem;
-  font-weight: bold;
-  color: #1f2937;
-  margin-top: 3rem;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 0.5rem;
-}
-
-.serviceList {
-  display: grid;
-  gap: 1.5rem;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Responsive grid */
-}
-
-.serviceCard {
-  background-color: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.serviceCardContent {
-  padding: 1.5rem;
-  flex-grow: 1;
-}
-
-.serviceCardContent h4 {
-  font-size: 1.25rem;
-  font-weight: bold;
-  color: #111827;
-  margin: 0 0 0.5rem 0;
-}
-
-.serviceCardContent p {
-  margin: 0.5rem 0;
-  color: #6b7280;
-}
-
-.serviceImage {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-  margin-top: 1rem;
-  border-radius: 0.5rem;
-}
-
-.serviceCardActions {
-  background-color: #f9fafb;
-  padding: 1rem;
-  display: flex;
-  justify-content: flex-end; /* Alinea los botones a la derecha */
-  gap: 0.75rem;
-  border-top: 1px solid #e5e7eb;
-}
-
-.buttonDanger {
-  background-color: #ef4444; /* rojo */
-  color: white;
-}
-.buttonDanger:hover {
-  background-color: #dc2626; /* rojo más oscuro */
-}
-
-.noServices {
-  text-align: center;
-  padding: 3rem;
-  background-color: white;
-  border-radius: 0.75rem;
-  border: 2px dashed #e5e7eb;
-  color: #6b7280;
-  font-size: 1.125rem;
-}
-
-/* --- ESTILOS MEJORADOS PARA EL MODAL DE DETALLES --- */
-.modalBackdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(17, 24, 39, 0.6);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    padding: 1rem;
-}
-
-.modalContent {
-    background-color: white;
-    padding: 2.5rem;
-    border-radius: 0.75rem;
-    width: 100%;
-    max-width: 700px; /* Un poco más ancho para el mapa */
-    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-    max-height: 90vh;
-    overflow-y: auto;
-}
-
-.modalContent h2 {
-    margin-top: 0;
-    font-size: 1.875rem;
-    color: #111827;
     margin-bottom: 2rem;
     border-bottom: 1px solid #e5e7eb;
     padding-bottom: 1rem;
@@ -450,7 +148,7 @@
 .detailGrid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem 2rem; /* Más espacio horizontal */
+    gap: 1.5rem 2rem;
     margin-bottom: 1.5rem;
 }
 
@@ -458,7 +156,6 @@
     margin-bottom: 1.5rem;
 }
 
-/* Se aplica a los items que ocupan todo el ancho */
 .detailGrid + .detailItem {
     grid-column: 1 / -1;
 }

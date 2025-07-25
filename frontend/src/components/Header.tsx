@@ -24,8 +24,7 @@ export const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
                 <nav className={styles.navLinks}>
                     {token && user ? (
                         <>
-                            {/* --- Se añade el botón de prueba aquí --- */}
-                            <button onClick={() => navigateTo('testBooking')} style={{color: '#f59e0b', fontWeight: 'bold'}}>Página de Prueba</button>
+                            {/* --- BOTÓN DE PRUEBA ELIMINADO DE AQUÍ --- */}
                             
                             <button onClick={() => navigateTo('profile')}>Mi Perfil</button>
                             

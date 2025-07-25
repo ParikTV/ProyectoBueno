@@ -12,11 +12,11 @@ import { AppointmentsPage } from '@/pages/AppointmentsPage';
 import { AdminPage } from '@/pages/AdminPage';
 import { OwnerDashboardPage } from '@/pages/OwnerDashboardPage';
 import { BusinessDetailsPage } from '@/pages/BusinessDetailsPage';
-import { TestBookingPage } from '@/pages/TestBookingPage'; // <-- Se importa la página de prueba
+// --- LÍNEA ELIMINADA: Se quita la importación de la página de prueba ---
 import { Page } from '@/types';
 
-// Se añade 'testBooking' a los tipos de página
-export type ExtendedPage = Page | 'ownerDashboard' | 'businessDetails' | 'testBooking';
+// --- LÍNEA MODIFICADA: Se quita 'testBooking' del tipo ---
+export type ExtendedPage = Page | 'ownerDashboard' | 'businessDetails';
 
 export default function App() {
     const [currentPage, setCurrentPage] = useState<ExtendedPage>('home');
@@ -44,8 +44,7 @@ export default function App() {
                 if (!selectedBusinessId) { return <HomePage navigateTo={navigateTo} />; }
                 return <BusinessDetailsPage businessId={selectedBusinessId} navigateTo={navigateTo} />;
 
-            case 'testBooking': // <-- Se añade la lógica para mostrar la página de prueba
-                return <TestBookingPage />;
+            // --- BLOQUE ELIMINADO: Se quita el 'case' para la página de prueba ---
 
             case 'home': 
             default: 
