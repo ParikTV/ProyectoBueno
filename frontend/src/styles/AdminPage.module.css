@@ -105,3 +105,211 @@
   color: #6b7280;
   font-size: 1.125rem;
 }
+/* --- Estilos del Modal de Detalles --- */
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(17, 24, 39, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modalContent {
+    background-color: white;
+    padding: 2.5rem;
+    border-radius: 0.75rem;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modalContent h2 {
+    margin-top: 0;
+    font-size: 1.875rem;
+    color: #111827;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 1rem;
+}
+
+.detailSection {
+    margin-bottom: 1.5rem;
+}
+
+.detailSection h4 {
+    font-size: 1.25rem;
+    color: #374151;
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.detailSection p {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    color: #4b5563;
+}
+
+.detailSection p strong {
+    color: #1f2937;
+    display: inline-block;
+    min-width: 150px;
+}
+/* src/styles/AdminPage.module.css */
+
+.pageContainer {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.pageHeader {
+  font-size: 2.25rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1rem;
+}
+
+.sectionTitle {
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-top: 3rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.serviceList {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.serviceCard {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.serviceCardContent {
+  padding: 1.5rem;
+  flex-grow: 1;
+}
+
+.serviceCardContent h4 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #111827;
+  margin: 0 0 0.5rem 0;
+}
+
+.serviceCardContent p {
+  margin: 0.5rem 0;
+  color: #6b7280;
+}
+
+.serviceCardActions {
+  background-color: #f9fafb;
+  padding: 1rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.buttonDanger {
+  background-color: #ef4444;
+  color: white;
+}
+.buttonDanger:hover {
+  background-color: #dc2626;
+}
+
+.noServices {
+  text-align: center;
+  padding: 3rem;
+  background-color: white;
+  border-radius: 0.75rem;
+  border: 2px dashed #e5e7eb;
+  color: #6b7280;
+  font-size: 1.125rem;
+}
+
+/* --- ¡NUEVOS ESTILOS PARA EL MODAL! --- */
+.modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(17, 24, 39, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modalContent {
+    background-color: white;
+    padding: 2.5rem;
+    border-radius: 0.75rem;
+    width: 100%;
+    max-width: 700px;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modalContent h2 {
+    margin-top: 0;
+    font-size: 1.875rem;
+    color: #111827;
+    margin-bottom: 1.5rem;
+}
+
+.detailGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.detailItem {
+    margin-bottom: 1rem;
+}
+
+.detailItem span {
+    display: block;
+    font-size: 0.875rem;
+    color: #6b7280;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.detailItem p {
+    margin: 0;
+    font-size: 1rem;
+    color: #1f2937;
+}
+
+.logoPreview {
+    max-width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+    border: 1px solid #e5e7eb;
+}

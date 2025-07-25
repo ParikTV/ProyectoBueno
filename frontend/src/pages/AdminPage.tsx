@@ -6,6 +6,7 @@ import { API_BASE_URL } from '@/services/api';
 import { UserResponse, CategoryRequest } from '@/types';
 import commonStyles from '@/styles/Common.module.css';
 import adminStyles from '@/styles/AdminPage.module.css';
+import { LocationDisplay } from '@/components/LocationDisplay';
 
 // --- Interfaces para compatibilidad con _id de MongoDB ---
 interface UserWithMongoId extends UserResponse {
@@ -69,7 +70,7 @@ const AdminCreateBusinessForm: React.FC<{ onUpdate: () => void }> = ({ onUpdate 
             setDescription('');
             setAddress('');
             setSelectedOwner('');
-            onUpdate(); // Para refrescar listas si es necesario
+            onUpdate();
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -145,8 +146,71 @@ const AdminCreateCategoryForm: React.FC<{ onUpdate: () => void }> = ({ onUpdate 
     );
 };
 
+// --- Componente del Modal de Detalles de Solicitud ---
+const RequestDetailsModal: React.FC<{
+    user: UserWithMongoId;
+    onClose: () => void;
+    onApprove: (userId: string) => void;
+    onReject: (userId: string) => void;
+}> = ({ user, onClose, onApprove, onReject }) => {
+    
+    if (!user.owner_request) return null;
 
-// --- Componente principal ---
+    const { business_name, business_description, address, logo_url } = user.owner_request;
+    const userId = user.id || user._id;
+
+    return (
+        <div className={adminStyles.modalBackdrop} onClick={onClose}>
+            <div className={adminStyles.modalContent} onClick={e => e.stopPropagation()}>
+                <h2>Detalles de la Solicitud</h2>
+                
+                <div className={adminStyles.detailGrid}>
+                    <div className={adminStyles.detailItem}>
+                        <span>Nombre Solicitante</span>
+                        <p>{user.full_name || "No especificado"}</p>
+                    </div>
+                    <div className={adminStyles.detailItem}>
+                        <span>Email</span>
+                        <p>{user.email}</p>
+                    </div>
+                    <div className={adminStyles.detailItem}>
+                        <span>Nombre del Negocio</span>
+                        <p>{business_name}</p>
+                    </div>
+                    <div className={adminStyles.detailItem}>
+                        <span>Dirección Propuesta</span>
+                        <p>{address}</p>
+                    </div>
+                </div>
+
+                <div className={adminStyles.detailItem}>
+                    <span>Descripción</span>
+                    <p>{business_description}</p>
+                </div>
+                
+                <div className={adminStyles.detailItem}>
+                    <span>Ubicación en el Mapa</span>
+                    <LocationDisplay address={address} />
+                </div>
+
+                {logo_url && (
+                    <div className={adminStyles.detailItem}>
+                        <span>Logo/Imagen Propuesta</span>
+                        <img src={logo_url} alt="Logo del negocio" className={adminStyles.logoPreview} />
+                    </div>
+                )}
+
+                <div className={commonStyles.actionButtons} style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                    <button className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} onClick={() => userId && onApprove(userId)}>Aprobar</button>
+                    <button className={`${commonStyles.button} ${adminStyles.buttonDanger}`} onClick={() => userId && onReject(userId)}>Rechazar</button>
+                    <button className={`${commonStyles.button} ${commonStyles.buttonSecondary}`} onClick={onClose}>Cerrar</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- Componente principal de la Página de Admin ---
 export const AdminPage: React.FC = () => {
     const { token, isAdmin, logout } = useAuth();
     
@@ -156,6 +220,7 @@ export const AdminPage: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [updateTrigger, setUpdateTrigger] = useState(0);
+    const [viewingRequest, setViewingRequest] = useState<UserWithMongoId | null>(null);
 
     const fetchAdminData = async () => {
         if (!token || !isAdmin) return;
@@ -186,13 +251,18 @@ export const AdminPage: React.FC = () => {
         if (isAdmin) fetchAdminData();
     }, [isAdmin, token, updateTrigger]);
     
-    const handleAction = async (action: () => Promise<any>, successMessage: string) => {
+    const handleAction = async (action: () => Promise<Response>, successMessage: string) => {
         setError(null);
         setSuccess(null);
         try {
-            await action();
+            const response = await action();
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.detail || "La operación falló.");
+            }
             setSuccess(successMessage);
-            setUpdateTrigger(t => t + 1); // Disparar actualización
+            setUpdateTrigger(t => t + 1);
+            setViewingRequest(null);
         } catch (err: any) {
             setError(err.message);
         }
@@ -200,13 +270,24 @@ export const AdminPage: React.FC = () => {
 
     const handleApproveOwnerRequest = (userId: string | undefined) => {
         if (!userId) return;
-        if (!window.confirm("¿Aprobar esta solicitud para ser Dueño?")) return;
         handleAction(
             () => fetch(`${API_BASE_URL}/users/admin/approve-owner/${userId}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             }),
             "¡Solicitud de dueño aprobada con éxito!"
+        );
+    };
+
+    const handleRejectOwnerRequest = (userId: string | undefined) => {
+        if (!userId) return;
+        if (!window.confirm("¿Estás seguro de que quieres rechazar esta solicitud?")) return;
+        handleAction(
+            () => fetch(`${API_BASE_URL}/users/admin/reject-owner/${userId}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            "Solicitud de dueño rechazada."
         );
     };
     
@@ -225,10 +306,19 @@ export const AdminPage: React.FC = () => {
     if (isLoading && !ownerRequests.length && !categoryRequests.length) {
         return <div className={adminStyles.pageContainer}><p>Cargando panel de administración...</p></div>;
     }
-    if (!isAdmin) return <div className={adminStyles.pageContainer}><p className={`${commonStyles.alert} ${commonStyles.alertError}`}>Acceso denegado. No tienes permisos de administrador.</p></div>;
+    if (!isAdmin) return <div className={adminStyles.pageContainer}><p className={`${commonStyles.alert} ${commonStyles.alertError}`}>Acceso denegado.</p></div>;
     
     return (
         <div className={adminStyles.pageContainer}>
+            {viewingRequest && (
+                <RequestDetailsModal 
+                    user={viewingRequest}
+                    onClose={() => setViewingRequest(null)}
+                    onApprove={handleApproveOwnerRequest}
+                    onReject={handleRejectOwnerRequest}
+                />
+            )}
+
             <h2 className={adminStyles.pageHeader}>Panel de Administración</h2>
             {error && <p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p>}
             {success && <p className={`${commonStyles.alert} ${commonStyles.alertSuccess}`}>{success}</p>}
@@ -252,11 +342,11 @@ export const AdminPage: React.FC = () => {
                             </div>
                             <div className={adminStyles.serviceCardActions}>
                                 <button
-                                    className={`${commonStyles.button} ${commonStyles.buttonPrimary}`}
+                                    className={`${commonStyles.button} ${commonStyles.buttonSecondary}`}
                                     style={{ width: 'auto' }}
-                                    onClick={() => handleApproveOwnerRequest(user.id || user._id)}
+                                    onClick={() => setViewingRequest(user)}
                                 >
-                                    Aprobar Solicitud
+                                    Ver Detalles
                                 </button>
                             </div>
                         </div>

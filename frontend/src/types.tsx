@@ -37,9 +37,13 @@ export interface Appointment {
     created_at: string;
 }
 
+// --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+// Añadimos los nuevos campos a la interfaz de la solicitud.
 export interface OwnerRequest {
     business_name: string;
     business_description: string;
+    address: string; // <--- CAMPO AÑADIDO
+    logo_url?: string; // <--- CAMPO AÑADIDO (opcional)
     status: 'pending' | 'approved' | 'rejected';
 }
 
@@ -65,7 +69,7 @@ export interface Business {
     photos: string[];
     categories: string[];
     status: 'draft' | 'published';
-    schedule?: Schedule; // <-- AÑADIDO
+    schedule?: Schedule;
 }
 
 export interface CategoryRequest {

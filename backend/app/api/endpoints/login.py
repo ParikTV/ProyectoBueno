@@ -19,7 +19,10 @@ async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends()
 ):
     user = await get_user_by_email(db, email=form_data.username)
-    if not user or not verify_password(form_data.password, user['password']):
+    
+    # --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
+    # Cambiamos user['password'] por user['hashed_password'] para que coincida con la base de datos.
+    if not user or not verify_password(form_data.password, user['hashed_password']):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Correo electrónico o contraseña incorrectos",

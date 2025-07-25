@@ -3,6 +3,7 @@
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from datetime import datetime
+from typing import Dict, Any
 
 from app.core.security import get_password_hash
 from app.schemas.user import UserCreate, UserUpdate, OwnerRequestSchema
@@ -20,7 +21,11 @@ async def get_user_by_id(db: AsyncIOMotorDatabase, user_id: str):
 async def create_user(db: AsyncIOMotorDatabase, user: UserCreate):
     hashed_password = get_password_hash(user.password)
     user_data = user.model_dump()
-    user_data["password"] = hashed_password
+    # --- ¡CORRECCIÓN CRÍTICA! ---
+    # Guardamos en 'hashed_password' en lugar de 'password'
+    user_data["hashed_password"] = hashed_password
+    del user_data["password"] # Borramos la contraseña en texto plano
+    
     user_data["role"] = "usuario"
     user_data["created_at"] = datetime.utcnow()
     
@@ -45,42 +50,33 @@ async def get_pending_owner_requests(db: AsyncIOMotorDatabase):
     cursor = db.users.find({"owner_request.status": "pending"})
     return await cursor.to_list(length=100)
     
-# --- ¡CAMBIO AQUÍ! ---
 async def approve_owner_request(db: AsyncIOMotorDatabase, user_id: str):
-    """
-    Aprueba la solicitud, actualiza el rol y crea un negocio en borrador
-    usando los datos de la solicitud (incluyendo dirección y logo).
-    """
     user = await get_user_by_id(db, user_id)
     if not user or not user.get("owner_request"):
         return None
-
     request_data = user["owner_request"]
-    
-    # Extraemos todos los datos nuevos
     business_name = request_data.get("business_name")
-    business_description = request_data.get("business_description")
     address = request_data.get("address")
-    logo_url = request_data.get("logo_url")
-
     if not business_name or not address:
-        # Si faltan datos clave, no se puede crear el negocio
         return None
-
     await db.users.update_one(
         {"_id": ObjectId(user_id)},
         {"$set": {"role": "dueño", "owner_request.status": "approved"}}
     )
-
-    # Creamos el negocio en borrador con la nueva información
     business_schema = BusinessCreate(
         name=business_name,
-        description=business_description or "Descripción pendiente.",
+        description=request_data.get("business_description") or "Descripción pendiente.",
         address=address,
-        logo_url=logo_url
+        logo_url=request_data.get("logo_url")
     )
     await crud_business.create_business(db, business_in=business_schema, owner_id=user_id)
-    
+    return await get_user_by_id(db, user_id)
+
+async def reject_owner_request(db: AsyncIOMotorDatabase, user_id: str):
+    await db.users.update_one(
+        {"_id": ObjectId(user_id)},
+        {"$set": {"owner_request.status": "rejected"}}
+    )
     return await get_user_by_id(db, user_id)
 
 async def get_all_owners(db: AsyncIOMotorDatabase):

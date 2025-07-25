@@ -6,8 +6,9 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from app.db.session import get_database
 from app.crud import crud_user
+from app.schemas.category import CategoryRequestSchema
 from app.schemas.user import UserCreate, UserResponse, UserUpdate, OwnerRequestSchema
-from app.core.security import get_current_user
+from app.core.security import get_current_user, get_current_admin_user
 
 router = APIRouter()
 
@@ -48,29 +49,37 @@ async def request_owner_role(
 
 # --- Rutas de Administrador ---
 
-# [ADMIN] Obtener todas las solicitudes pendientes para ser dueño
 @router.get("/admin/owner-requests", response_model=List[UserResponse])
-async def get_pending_owner_requests(db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Acción no permitida")
+async def get_pending_owner_requests(db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_admin_user)):
     pending_users = await crud_user.get_pending_owner_requests(db)
     return pending_users
 
-# [ADMIN] Aprobar una solicitud de dueño
 @router.post("/admin/approve-owner/{user_id}", response_model=UserResponse)
-async def approve_owner(user_id: str, db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Acción no permitida")
-    
+async def approve_owner(user_id: str, db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_admin_user)):
     approved_user = await crud_user.approve_owner_request(db, user_id)
     if not approved_user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado o la solicitud no pudo ser aprobada")
     return approved_user
 
-# [ADMIN] Obtener todos los dueños
+@router.post("/admin/reject-owner/{user_id}", response_model=UserResponse)
+async def reject_owner(
+    user_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: UserResponse = Depends(get_current_admin_user)
+):
+    user_to_reject = await crud_user.get_user_by_id(db, user_id)
+    if not user_to_reject:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    
+    rejected_user = await crud_user.reject_owner_request(db, user_id)
+    return rejected_user
+
 @router.get("/admin/owners", response_model=List[UserResponse])
-async def get_all_owners(db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Acción no permitida")
+async def get_all_owners(db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_admin_user)):
     owners = await crud_user.get_all_owners(db)
     return owners
+
+@router.get("/admin/category-requests", response_model=List[CategoryRequestSchema])
+async def get_pending_category_requests_route(db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_admin_user)):
+    requests = await crud_user.get_pending_category_requests(db)
+    return requests

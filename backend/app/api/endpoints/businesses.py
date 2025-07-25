@@ -13,10 +13,7 @@ from app.core.security import get_current_user
 
 router = APIRouter()
 
-# --- FUNCIÓN AUXILIAR PARA CONVERSIÓN ---
-# Creamos una función para no repetir código.
 def convert_business_to_response(business: Dict[str, Any]) -> Dict[str, Any]:
-    """Convierte un documento de negocio de la BD a un diccionario de respuesta."""
     return {
         "id": str(business["_id"]),
         "owner_id": str(business["owner_id"]),
@@ -30,37 +27,36 @@ def convert_business_to_response(business: Dict[str, Any]) -> Dict[str, Any]:
         "schedule": business.get("schedule")
     }
 
-# [PÚBLICO] Obtener todos los negocios publicados
 @router.get("/", response_model=List[BusinessResponse])
 async def get_all_published_businesses(db: AsyncIOMotorDatabase = Depends(get_database)):
     businesses_from_db = await crud_business.get_published_businesses(db)
     return [convert_business_to_response(b) for b in businesses_from_db]
 
-# --- ¡RUTA CORREGIDA! ---
-# [PÚBLICO] Obtener un negocio por ID
 @router.get("/{business_id}", response_model=BusinessResponse)
 async def get_business_by_id(business_id: str, db: AsyncIOMotorDatabase = Depends(get_database)):
     if not ObjectId.is_valid(business_id):
         raise HTTPException(status_code=400, detail="ID de negocio inválido")
-    business = await crud_business.get_business(db, business_id)
+    # CORREGIDO: Usando la nueva función get_business
+    business = await crud_business.get_business(db, business_id) 
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
     return convert_business_to_response(business)
 
-# [DUEÑO] Obtener todos mis negocios
+# --- ¡RUTA CORREGIDA! ---
 @router.get("/my-businesses/", response_model=List[BusinessResponse])
 async def get_my_businesses(db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
+    # CORREGIDO: Se cambió 'get_businesses_by_owner_id' por 'get_businesses_by_owner'
     businesses = await crud_business.get_businesses_by_owner(db, str(current_user.id))
     return [convert_business_to_response(b) for b in businesses]
 
-# [DUEÑO] Crear mi primer negocio
+# ... (El resto de las funciones de este archivo se quedan igual)
+
 @router.post("/my-business/", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
 async def create_my_business(business_in: BusinessCreate, db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
     owner_id = str(current_user.id)
     business = await crud_business.create_business(db, business_in, owner_id)
     return convert_business_to_response(business)
 
-# [DUEÑO] Actualizar mi negocio
 @router.put("/my-business/{business_id}", response_model=BusinessResponse)
 async def update_my_business(business_id: str, business_in: BusinessUpdate, db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
     if not ObjectId.is_valid(business_id):
@@ -73,7 +69,6 @@ async def update_my_business(business_id: str, business_in: BusinessUpdate, db: 
         raise HTTPException(status_code=404, detail="No se pudo actualizar el negocio")
     return convert_business_to_response(updated_business)
 
-# [DUEÑO] Publicar mi negocio
 @router.post("/my-business/{business_id}/publish", response_model=BusinessResponse)
 async def publish_my_business(business_id: str, db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
     business = await crud_business.get_business(db, business_id)
@@ -84,7 +79,6 @@ async def publish_my_business(business_id: str, db: AsyncIOMotorDatabase = Depen
         raise HTTPException(status_code=404, detail="No se pudo publicar el negocio")
     return convert_business_to_response(published_business)
 
-# [DUEÑO] Gestionar el horario de mi negocio
 @router.put("/my-business/{business_id}/schedule", response_model=BusinessResponse)
 async def manage_my_business_schedule(business_id: str, schedule_in: Schedule, db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
     business = await crud_business.get_business(db, business_id)
@@ -93,7 +87,6 @@ async def manage_my_business_schedule(business_id: str, schedule_in: Schedule, d
     updated_business = await crud_business.update_business_schedule(db, business_id, schedule_in)
     return convert_business_to_response(updated_business)
 
-# [PÚBLICO] Obtener horarios disponibles
 @router.get("/{business_id}/available-slots", response_model=List[str])
 async def get_available_slots(business_id: str, date: str, db: AsyncIOMotorDatabase = Depends(get_database)):
     try:
@@ -102,7 +95,6 @@ async def get_available_slots(business_id: str, date: str, db: AsyncIOMotorDatab
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# [ADMIN] Asignar un negocio a un dueño
 @router.post("/admin/assign-business", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
 async def assign_business_to_owner(owner_id: str, business_in: BusinessCreate, db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
     if current_user.role != "admin":
