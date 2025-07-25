@@ -7,8 +7,10 @@ import styles from '@/styles/DetailsPage.module.css';
 import commonStyles from '@/styles/Common.module.css';
 import { useAuth } from '@/hooks/useAuth';
 import { ExtendedPage } from '@/App';
+// Importamos el componente para mostrar el mapa
+import { LocationDisplay } from '@/components/LocationDisplay';
 
-// --- NUEVO MODAL DE RESERVA CON SELECTOR DE FECHA/HORA ---
+// --- MODAL DE RESERVA (SIN CAMBIOS) ---
 const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookingSuccess: () => void; }> = ({ business, onClose, onBookingSuccess }) => {
     const { token } = useAuth();
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -118,7 +120,8 @@ const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookin
     );
 };
 
-// --- COMPONENTE PRINCIPAL DE LA PÁGINA ---
+
+// --- ¡COMPONENTE PRINCIPAL DE LA PÁGINA ACTUALIZADO! ---
 interface BusinessDetailsPageProps { 
     businessId: string; 
     navigateTo: (page: ExtendedPage) => void; 
@@ -148,11 +151,10 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
     if (isLoading) return <div style={{textAlign: 'center', padding: '2rem'}}>Cargando...</div>;
     if (!business) return <div style={{textAlign: 'center', padding: '2rem'}}>Negocio no encontrado.</div>;
     
-    // Deshabilitar botón de reserva si no hay horario configurado
     const canBook = business.status === 'published' && !!business.schedule;
 
     return (
-        <div className={styles.detailsContainer}>
+        <div className={styles.pageWrapper}>
             {showBookingModal && (
                 <BookingModal 
                     business={business} 
@@ -160,31 +162,55 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
                     onBookingSuccess={() => navigateTo('appointments')} 
                 />
             )}
-            <div className={styles.imageColumn}>
-                <img src={business.photos?.[0] || 'https://placehold.co/600x400/e2e8f0/4a5568?text=Sin+Imagen'} alt={business.name} />
-            </div>
-            <div className={styles.infoColumn}>
-                <span className={styles.category}>{business.categories.join(', ')}</span>
-                <h1>{business.name}</h1>
-                <p className={styles.address}>{business.address}</p>
-                <hr className={styles.divider} />
-                <p className={styles.description}>{business.description}</p>
-                <button 
-                    className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} 
-                    style={{width: 'auto'}} 
-                    disabled={!canBook}
-                    title={!canBook ? 'Este negocio no ha configurado su horario de citas' : 'Reservar una cita'}
-                    onClick={() => { 
-                        if (!token) { 
-                            alert("Debes iniciar sesión para reservar."); 
-                            navigateTo('login'); 
-                        } else { 
-                            setShowBookingModal(true); 
-                        } 
-                    }}
-                >
-                    {canBook ? 'Reservar ahora' : 'Reservas no disponibles'}
-                </button>
+
+            {/* --- NUEVO LAYOUT DE 2 COLUMNAS --- */}
+            <div className={styles.detailsContainer}>
+                {/* Columna Izquierda: Imagen y Fotos Adicionales */}
+                <div className={styles.imageColumn}>
+                    <img 
+                        src={business.photos?.[0] || 'https://placehold.co/600x400/e2e8f0/4a5568?text=Sin+Imagen'} 
+                        alt={business.name} 
+                        className={styles.mainImage}
+                    />
+                    {/* Aquí podrías agregar una galería de fotos si hay más de una */}
+                </div>
+
+                {/* Columna Derecha: Información y Mapa */}
+                <div className={styles.infoColumn}>
+                    <span className={styles.category}>{business.categories.join(', ') || 'Sin Categoría'}</span>
+                    <h1>{business.name}</h1>
+                    <p className={styles.address}>{business.address}</p>
+                    
+                    <button 
+                        className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} 
+                        style={{width: 'auto', marginBottom: '1.5rem'}} 
+                        disabled={!canBook}
+                        title={!canBook ? 'Este negocio no ha configurado su horario de citas' : 'Reservar una cita'}
+                        onClick={() => { 
+                            if (!token) { 
+                                alert("Debes iniciar sesión para reservar."); 
+                                navigateTo('login'); 
+                            } else { 
+                                setShowBookingModal(true); 
+                            } 
+                        }}
+                    >
+                        {canBook ? 'Reservar ahora' : 'Reservas no disponibles'}
+                    </button>
+
+                    <hr className={styles.divider} />
+                    
+                    <div className={styles.section}>
+                        <h4>Descripción</h4>
+                        <p className={styles.description}>{business.description}</p>
+                    </div>
+
+                    {/* --- MAPA DE UBICACIÓN --- */}
+                    <div className={styles.section}>
+                        <h4>Ubicación</h4>
+                        <LocationDisplay address={business.address} />
+                    </div>
+                </div>
             </div>
         </div>
     );
