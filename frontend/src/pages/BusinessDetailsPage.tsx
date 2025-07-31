@@ -120,7 +120,7 @@ const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookin
 };
 
 
-// --- COMPONENTE PRINCIPAL DE LA PÁGINA ---
+// --- COMPONENTE PRINCIPAL DE LA PÁGINA (CON CARRUSEL AÑADIDO) ---
 interface BusinessDetailsPageProps { 
     businessId: string; 
     navigateTo: (page: ExtendedPage) => void; 
@@ -131,6 +131,7 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
     const [business, setBusiness] = useState<Business | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [showBookingModal, setShowBookingModal] = useState(false);
+    const [currentImageIndex, setCurrentImageIndex] = useState(0); // Estado para el carrusel
 
     const fetchDetails = useCallback(async () => {
         setIsLoading(true);
@@ -146,15 +147,35 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
     }, [businessId]);
 
     useEffect(() => { fetchDetails(); }, [fetchDetails]);
+    
+    // --- LÓGICA DEL CARRUSEL ---
+    const allImages = React.useMemo(() => {
+        if (!business) return [];
+        // La foto principal (logo_url) va primero, seguida del resto.
+        // Usamos Set para evitar duplicados si el logo_url también está en 'photos'.
+        return Array.from(new Set([
+            ...(business.logo_url ? [business.logo_url] : []),
+            ...business.photos
+        ]));
+    }, [business]);
+
+    const goToPrevious = () => {
+        const isFirstImage = currentImageIndex === 0;
+        const newIndex = isFirstImage ? allImages.length - 1 : currentImageIndex - 1;
+        setCurrentImageIndex(newIndex);
+    };
+
+    const goToNext = () => {
+        const isLastImage = currentImageIndex === allImages.length - 1;
+        const newIndex = isLastImage ? 0 : currentImageIndex + 1;
+        setCurrentImageIndex(newIndex);
+    };
 
     if (isLoading) return <div style={{textAlign: 'center', padding: '2rem'}}>Cargando...</div>;
     if (!business) return <div style={{textAlign: 'center', padding: '2rem'}}>Negocio no encontrado.</div>;
     
     const canBook = business.status === 'published' && !!business.schedule;
     
-    // --- LÓGICA DE IMAGEN CORREGIDA AQUÍ ---
-    const displayImage = business.photos?.[0] || business.logo_url || 'https://placehold.co/600x400/e2e8f0/4a5568?text=Sin+Imagen';
-
     return (
         <div className={styles.pageWrapper}>
             {showBookingModal && (
@@ -166,13 +187,38 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
             )}
 
             <div className={styles.detailsContainer}>
+                {/* --- SECCIÓN DE IMAGEN CONVERTIDA EN CARRUSEL --- */}
                 <div className={styles.imageColumn}>
-                    <img 
-                        // Usamos la variable con la lógica corregida
-                        src={displayImage} 
-                        alt={business.name} 
-                        className={styles.mainImage}
-                    />
+                    {allImages.length > 0 ? (
+                        <div className={styles.carouselContainer}>
+                            {allImages.length > 1 && (
+                                <>
+                                    <button onClick={goToPrevious} className={`${styles.carouselButton} ${styles.carouselButtonLeft}`}>&#10094;</button>
+                                    <button onClick={goToNext} className={`${styles.carouselButton} ${styles.carouselButtonRight}`}>&#10095;</button>
+                                </>
+                            )}
+                            <img 
+                                src={allImages[currentImageIndex]} 
+                                alt={`${business.name} - foto ${currentImageIndex + 1}`} 
+                                className={styles.mainImage}
+                            />
+                            <div className={styles.carouselDots}>
+                                {allImages.map((_, index) => (
+                                    <span 
+                                        key={index}
+                                        className={`${styles.carouselDot} ${currentImageIndex === index ? styles.activeDot : ''}`}
+                                        onClick={() => setCurrentImageIndex(index)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    ) : (
+                         <img 
+                            src='https://placehold.co/600x400/e2e8f0/4a5568?text=Sin+Imagen' 
+                            alt={business.name} 
+                            className={styles.mainImage}
+                        />
+                    )}
                 </div>
 
                 <div className={styles.infoColumn}>

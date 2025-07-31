@@ -7,6 +7,76 @@ import { Business, Category, Schedule, ScheduleDay } from '@/types';
 import commonStyles from '@/styles/Common.module.css';
 import { LocationPicker } from '@/components/LocationPicker';
 import { ExtendedPage } from '@/App';
+import { StarIcon } from '@/components/Icons'; // Importamos el ícono
+
+// --- Estilos para la nueva UI de gestión de fotos (añadidos aquí para simplicidad) ---
+const photoManagementStyles: { [key: string]: React.CSSProperties } = {
+    photoGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+        gap: '1rem',
+        marginTop: '10px',
+        padding: '1rem',
+        border: '1px solid #e5e7eb',
+        borderRadius: '0.5rem'
+    },
+    photoContainer: {
+        position: 'relative',
+        width: '100%',
+        paddingBottom: '100%', // Para mantener un aspect ratio 1:1
+        borderRadius: '0.5rem',
+        overflow: 'hidden'
+    },
+    photoImg: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        objectFit: 'cover'
+    },
+    photoOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        gap: '0.5rem',
+        opacity: 0,
+        transition: 'opacity 0.2s'
+    },
+    photoContainerHover: {
+        opacity: 1
+    },
+    photoButton: {
+        backgroundColor: 'rgba(255, 255, 255, 0.8)',
+        border: 'none',
+        borderRadius: '50%',
+        width: '32px',
+        height: '32px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer'
+    },
+    mainPhotoIndicator: {
+        position: 'absolute',
+        top: '4px',
+        left: '4px',
+        color: '#f59e0b',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        borderRadius: '50%',
+        padding: '4px'
+    },
+     mainPhotoBorder: {
+        boxShadow: '0 0 0 3px #4f46e5', // Borde para la foto principal
+        borderRadius: '0.5rem',
+    }
+};
 
 // --- Componente para registrar un NUEVO negocio (sin cambios) ---
 const BusinessRegistrationForm: React.FC<{ onSave: () => void; onCancel: () => void; }> = ({ onSave, onCancel }) => {
@@ -83,6 +153,51 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
     const [newPhotoUrl, setNewPhotoUrl] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [hoveredPhoto, setHoveredPhoto] = useState<string | null>(null);
+
+    // --- NUEVA LÓGICA DE FOTOS ---
+    const allBusinessPhotos = Array.from(new Set([
+        ...(formData.logo_url ? [formData.logo_url] : []),
+        ...formData.photos
+    ]));
+
+    const handleSetAsMain = (photoUrl: string) => {
+        setFormData(prev => {
+            const otherPhotos = allBusinessPhotos.filter(p => p !== photoUrl);
+            return {
+                ...prev,
+                logo_url: photoUrl,
+                photos: otherPhotos
+            };
+        });
+    };
+
+    const handleDeletePhoto = (photoUrl: string) => {
+        if (!window.confirm("¿Estás seguro de que quieres eliminar esta foto?")) return;
+
+        setFormData(prev => {
+            const newPhotos = prev.photos.filter(p => p !== photoUrl);
+            const newLogoUrl = prev.logo_url === photoUrl ? null : prev.logo_url;
+            return {
+                ...prev,
+                logo_url: newLogoUrl,
+                photos: newPhotos
+            };
+        });
+    };
+
+    const handleAddPhoto = () => {
+        if (newPhotoUrl && !allBusinessPhotos.includes(newPhotoUrl)) {
+            // Si no hay foto principal, la primera que se añade se convierte en la principal
+            if (!formData.logo_url) {
+                setFormData({ ...formData, logo_url: newPhotoUrl });
+            } else {
+                setFormData({ ...formData, photos: [...formData.photos, newPhotoUrl] });
+            }
+            setNewPhotoUrl('');
+        }
+    };
+    // --- FIN DE LA NUEVA LÓGICA DE FOTOS ---
 
     const handleLocationSelect = (address: string) => {
         setFormData(prev => ({ ...prev, address }));
@@ -104,13 +219,6 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
         setFormData({ ...formData, categories: newCategories });
     };
 
-    const handleAddPhoto = () => {
-        if (newPhotoUrl && !formData.photos.includes(newPhotoUrl)) {
-            setFormData({ ...formData, photos: [...formData.photos, newPhotoUrl] });
-            setNewPhotoUrl('');
-        }
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -118,7 +226,17 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
         try {
             const businessId = business.id || (business as any)._id;
             if (!businessId) throw new Error("ID del negocio no encontrado.");
-            const updateData = { name: formData.name, description: formData.description, address: formData.address, photos: formData.photos, categories: formData.categories };
+            
+            // --- PAYLOAD DE ACTUALIZACIÓN MODIFICADO ---
+            const updateData = { 
+                name: formData.name, 
+                description: formData.description, 
+                address: formData.address, 
+                photos: formData.photos, 
+                categories: formData.categories,
+                logo_url: formData.logo_url // Se envía la foto principal
+            };
+
             const response = await fetch(`${API_BASE_URL}/businesses/my-business/${businessId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -147,8 +265,6 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
                 
                 <div className={commonStyles.formGroup}>
                     <label>Dirección del Negocio (Haz clic en el mapa para actualizar)</label>
-                    {/* --- ¡AQUÍ ESTÁ EL CAMBIO! --- */}
-                    {/* Le pasamos la dirección actual como 'initialAddress' */}
                     <LocationPicker 
                         onLocationSelect={handleLocationSelect}
                         initialAddress={formData.address}
@@ -158,13 +274,57 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
 
                 <div className={commonStyles.formGroup}><label>Descripción</label><textarea value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} required style={{minHeight: '100px', width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', boxSizing: 'border-box'}} /></div>
                 <div className={commonStyles.formGroup}><label>Categorías</label><div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', padding: '10px', border: '1px solid #ddd', borderRadius: '8px' }}>{allCategories.map(cat => (<label key={cat.id || (cat as any)._id} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}><input type="checkbox" checked={formData.categories.includes(cat.name)} onChange={() => handleCategoryChange(cat.name)} />{cat.name}</label>))}</div></div>
-                <div className={commonStyles.formGroup}><label>Fotos del Negocio</label><div style={{display: 'flex', gap: '10px'}}><input type="url" placeholder="https://ejemplo.com/foto.jpg" value={newPhotoUrl} onChange={e => setNewPhotoUrl(e.target.value)} style={{flexGrow: 1}}/><button type="button" className={commonStyles.buttonSecondary} onClick={handleAddPhoto} style={{width: 'auto'}}>Añadir</button></div><div style={{display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '10px'}}>{formData.photos.map((photo, index) => <img key={index} src={photo} alt={`Foto ${index + 1}`} style={{width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px'}}/>)}</div></div>
+                
+                {/* --- SECCIÓN DE FOTOS ACTUALIZADA --- */}
+                <div className={commonStyles.formGroup}>
+                    <label>Fotos del Negocio</label>
+                    <div style={{display: 'flex', gap: '10px'}}>
+                        <input 
+                            type="url" 
+                            placeholder="https://ejemplo.com/foto.jpg" 
+                            value={newPhotoUrl} 
+                            onChange={e => setNewPhotoUrl(e.target.value)} 
+                            style={{flexGrow: 1}}
+                        />
+                        <button type="button" className={commonStyles.buttonSecondary} onClick={handleAddPhoto} style={{width: 'auto'}}>Añadir</button>
+                    </div>
+                    <div style={photoManagementStyles.photoGrid}>
+                        {allBusinessPhotos.length > 0 ? allBusinessPhotos.map((photo) => (
+                            <div 
+                                key={photo} 
+                                style={{
+                                    ...(photo === formData.logo_url ? photoManagementStyles.mainPhotoBorder : {}),
+                                }}
+                                onMouseEnter={() => setHoveredPhoto(photo)}
+                                onMouseLeave={() => setHoveredPhoto(null)}
+                            >
+                                <div style={photoManagementStyles.photoContainer}>
+                                    <img src={photo} alt="Foto del negocio" style={photoManagementStyles.photoImg} />
+                                    {photo === formData.logo_url && (
+                                        <div style={photoManagementStyles.mainPhotoIndicator}>
+                                            <StarIcon className=''/>
+                                        </div>
+                                    )}
+                                    <div style={{
+                                        ...photoManagementStyles.photoOverlay,
+                                        ...(hoveredPhoto === photo ? photoManagementStyles.photoContainerHover : {})
+                                    }}>
+                                        {photo !== formData.logo_url && (
+                                            <button type="button" title="Poner como principal" style={photoManagementStyles.photoButton} onClick={() => handleSetAsMain(photo)}>⭐</button>
+                                        )}
+                                        <button type="button" title="Eliminar foto" style={{...photoManagementStyles.photoButton, color: '#ef4444'}} onClick={() => handleDeletePhoto(photo)}>🗑️</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )) : <p style={{gridColumn: '1 / -1', textAlign: 'center', color: '#6b7280'}}>Añade una URL para subir tu primera foto.</p>}
+                    </div>
+                </div>
+
                 <div className={commonStyles.actionButtons}><button type="submit" className={commonStyles.buttonPrimary} disabled={isLoading}>{isLoading ? 'Guardando...' : 'Guardar Cambios'}</button><button type="button" className={commonStyles.buttonSecondary} onClick={onCancel}>Cancelar</button></div>
             </form>
         </div>
     );
 };
-
 
 // --- Componente de Horario (sin cambios) ---
 const ManageScheduleForm: React.FC<{ business: Business; onSave: () => void; onCancel: () => void; }> = ({ business, onSave, onCancel }) => {
@@ -246,9 +406,9 @@ const ManageScheduleForm: React.FC<{ business: Business; onSave: () => void; onC
 };
 
 
-// --- Componente principal de la página (sin cambios) ---
+// --- Componente principal de la página (LÓGICA DE IMAGEN ACTUALIZADA) ---
 export const OwnerDashboardPage: React.FC<{navigateTo: (page: ExtendedPage, businessId?: string) => void;}> = ({ navigateTo }) => {
-    // ... (este componente no necesita cambios)
+    // ... (el resto del componente no necesita cambios)
     const { token } = useAuth();
     const [businesses, setBusinesses] = useState<Business[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -327,6 +487,7 @@ export const OwnerDashboardPage: React.FC<{navigateTo: (page: ExtendedPage, busi
                                         <p style={{margin: 0, padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.8rem', fontWeight: 'bold', display: 'inline-block', backgroundColor: business.status === 'published' ? '#dcfce7' : '#fffbeb', color: business.status === 'published' ? '#166534' : '#b45309'}}>{business.status === 'published' ? 'PUBLICADO' : 'BORRADOR'}</p>
                                     </div>
                                     <img 
+                                        // --- LÓGICA DE IMAGEN CORREGIDA ---
                                         src={business.logo_url || business.photos?.[0] || 'https://placehold.co/100x100/e2e8f0/4a5568?text=Sin+Logo'} 
                                         alt="Logo" 
                                         style={{width: '80px', height: '80px', objectFit: 'cover', borderRadius: '0.5rem', border: '1px solid #e5e7eb'}}

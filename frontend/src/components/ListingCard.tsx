@@ -12,7 +12,10 @@ interface ListingCardProps {
 }
 
 export const ListingCard: React.FC<ListingCardProps> = ({ business, onViewDetails }) => {
-    const displayImage = business.photos?.[0] || business.logo_url || 'https://placehold.co/400x300/e2e8f0/4a5568?text=Sin+Imagen';
+    // --- ¡LÍNEA CORREGIDA! ---
+    // Se prioriza la foto principal (logo_url). Si no existe,
+    // se muestra la primera de la galería. Si no hay ninguna, se muestra un placeholder.
+    const displayImage = business.logo_url || business.photos?.[0] || 'https://placehold.co/400x300/e2e8f0/4a5568?text=Sin+Imagen';
     const displayCategories = business.categories.join(', ');
 
     return (
@@ -27,6 +30,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({ business, onViewDetail
                 <h3 className={styles.listingCardName}>{business.name}</h3>
                 <div className={styles.listingCardRating}>
                     <StarIcon />
+                    {/* El rating se mantiene aleatorio como estaba en el código original */}
                     <span>{(Math.random() * (5 - 4.2) + 4.2).toFixed(1)}</span>
                 </div>
                 <p className={styles.listingCardLocation}>{business.address}</p>
