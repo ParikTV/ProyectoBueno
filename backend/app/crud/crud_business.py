@@ -1,4 +1,3 @@
-
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from datetime import datetime
@@ -87,16 +86,12 @@ async def update_business_schedule(db: AsyncIOMotorDatabase, business_id: str, s
     return await get_business(db, business_id)
 
 async def get_available_slots_for_day(db: AsyncIOMotorDatabase, business_id: str, date: str):
-    """
-    Calcula los horarios disponibles para un negocio en una fecha específica.
-    (Esta es una implementación de ejemplo)
-    """
     business = await get_business(db, business_id)
     if not business or not business.get("schedule"):
         raise ValueError("El negocio no tiene un horario configurado.")
-    
-    from datetime import datetime, time, timedelta
-    
+
+    from datetime import datetime, timedelta
+
     try:
         request_date = datetime.strptime(date, "%Y-%m-%d")
         day_of_week = request_date.strftime("%A").lower()
@@ -107,17 +102,26 @@ async def get_available_slots_for_day(db: AsyncIOMotorDatabase, business_id: str
     if not day_schedule or not day_schedule.get("is_active"):
         return []
 
-
     open_time = datetime.strptime(day_schedule["open_time"], "%H:%M").time()
     close_time = datetime.strptime(day_schedule["close_time"], "%H:%M").time()
-    slot_duration = day_schedule["slot_duration_minutes"]
-    
-    available_slots = []
+    slot_duration = int(day_schedule["slot_duration_minutes"])
+    capacity = int(day_schedule["capacity_per_slot"])
+
+    all_slots = []
     current_time = datetime.combine(request_date, open_time)
     end_time = datetime.combine(request_date, close_time)
-
     while current_time < end_time:
-        available_slots.append(current_time.strftime("%H:%M"))
+        all_slots.append(current_time.strftime("%H:%M"))
         current_time += timedelta(minutes=slot_duration)
-        
+
+    from app.crud.crud_appointment import get_appointments_by_business_id_and_date
+    appointments = await get_appointments_by_business_id_and_date(db, business_id, request_date)
+
+    slot_counts = {}
+    for app in appointments:
+        slot_time = app["appointment_time"].strftime("%H:%M")
+        slot_counts[slot_time] = slot_counts.get(slot_time, 0) + 1
+
+    available_slots = [slot for slot in all_slots if slot_counts.get(slot, 0) < capacity]
+
     return available_slots
