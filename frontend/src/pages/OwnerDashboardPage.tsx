@@ -6,6 +6,7 @@ import { API_BASE_URL } from '@/services/api';
 import { Business, Category, Schedule, ScheduleDay } from '@/types';
 import commonStyles from '@/styles/Common.module.css';
 import { LocationPicker } from '@/components/LocationPicker';
+import { ExtendedPage } from '@/App';
 
 // --- Componente para registrar un NUEVO negocio (sin cambios) ---
 const BusinessRegistrationForm: React.FC<{ onSave: () => void; onCancel: () => void; }> = ({ onSave, onCancel }) => {
@@ -246,7 +247,7 @@ const ManageScheduleForm: React.FC<{ business: Business; onSave: () => void; onC
 
 
 // --- Componente principal de la página (sin cambios) ---
-export const OwnerDashboardPage: React.FC = () => {
+export const OwnerDashboardPage: React.FC<{navigateTo: (page: ExtendedPage, businessId?: string) => void;}> = ({ navigateTo }) => {
     // ... (este componente no necesita cambios)
     const { token } = useAuth();
     const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -335,6 +336,7 @@ export const OwnerDashboardPage: React.FC = () => {
                                 <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', borderTop: '1px solid #f3f4f6', paddingTop: '1rem', justifyContent: 'flex-end' }}>
                                     <button className={commonStyles.buttonSecondary} style={{width: 'auto'}} onClick={() => setIsEditing(business)}>✏️ Editar</button>
                                     <button className={commonStyles.buttonSecondary} style={{width: 'auto'}} onClick={() => setManagingScheduleFor(business)}>🗓️ Horario</button>
+                                    <button className={commonStyles.buttonSecondary} style={{width: 'auto'}} onClick={() => navigateTo('ownerAppointments', businessId)}>Ver Reservas</button>
                                     {business.status === 'draft' && (<button className={commonStyles.buttonPrimary} style={{width: 'auto'}} onClick={() => handleLaunch(businessId)}>🚀 Publicar</button>)}
                                 </div>
                             </div>

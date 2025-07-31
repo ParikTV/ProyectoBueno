@@ -20,6 +20,12 @@ async def get_appointments_by_user_id(db: AsyncIOMotorDatabase, user_id: str):
     """Obtiene todas las citas de un usuario específico."""
     return await db["appointments"].find({"user_id": ObjectId(user_id)}).to_list(100)
 
+async def get_appointments_by_business_id(db: AsyncIOMotorDatabase, business_id: str):
+    """Obtiene todas las citas de un negocio."""
+    return await db["appointments"].find({
+        "business_id": ObjectId(business_id)
+    }).to_list(1000)
+
 async def get_appointments_by_business_id_and_date(db: AsyncIOMotorDatabase, business_id: str, date: datetime):
     """Obtiene todas las citas de un negocio para un día específico."""
     start_of_day = datetime(date.year, date.month, date.day)

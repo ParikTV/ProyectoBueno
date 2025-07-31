@@ -1,6 +1,6 @@
 // src/types.tsx
 
-export type Page = 'home' | 'register' | 'login' | 'profile' | 'appointments' | 'admin';
+export type Page = 'home' | 'register' | 'login' | 'profile' | 'appointments' | 'admin' | 'ownerAppointments';
 
 // --- NUEVAS INTERFACES PARA EL HORARIO ---
 export interface ScheduleDay {

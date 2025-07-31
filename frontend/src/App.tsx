@@ -12,11 +12,12 @@ import { AppointmentsPage } from '@/pages/AppointmentsPage';
 import { AdminPage } from '@/pages/AdminPage';
 import { OwnerDashboardPage } from '@/pages/OwnerDashboardPage';
 import { BusinessDetailsPage } from '@/pages/BusinessDetailsPage';
+import { OwnerAppointmentsPage } from '@/pages/OwnerAppointmentsPage';
 // --- LÍNEA ELIMINADA: Se quita la importación de la página de prueba ---
 import { Page } from '@/types';
 
 // --- LÍNEA MODIFICADA: Se quita 'testBooking' del tipo ---
-export type ExtendedPage = Page | 'ownerDashboard' | 'businessDetails';
+export type ExtendedPage = Page | 'ownerDashboard' | 'businessDetails' | 'ownerAppointments';
 
 export default function App() {
     const [currentPage, setCurrentPage] = useState<ExtendedPage>('home');
@@ -24,6 +25,8 @@ export default function App() {
 
     const navigateTo = (page: ExtendedPage, businessId?: string) => {
         if (page === 'businessDetails' && businessId) {
+            setSelectedBusinessId(businessId);
+        } else if (page === 'ownerAppointments' && businessId) {
             setSelectedBusinessId(businessId);
         } else {
             setSelectedBusinessId(null);
@@ -38,11 +41,15 @@ export default function App() {
             case 'profile': return <ProfilePage />;
             case 'appointments': return <AppointmentsPage />;
             case 'admin': return <AdminPage />;
-            case 'ownerDashboard': return <OwnerDashboardPage />;
+            case 'ownerDashboard': return <OwnerDashboardPage navigateTo={navigateTo} />;
             
             case 'businessDetails':
                 if (!selectedBusinessId) { return <HomePage navigateTo={navigateTo} />; }
                 return <BusinessDetailsPage businessId={selectedBusinessId} navigateTo={navigateTo} />;
+
+            case 'ownerAppointments':
+                if (!selectedBusinessId) { return <OwnerDashboardPage navigateTo={navigateTo} />; }
+                return <OwnerAppointmentsPage businessId={selectedBusinessId} />;
 
             // --- BLOQUE ELIMINADO: Se quita el 'case' para la página de prueba ---
 
