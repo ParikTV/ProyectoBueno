@@ -1,4 +1,3 @@
-
 from pydantic import BaseModel, Field
 from typing import Optional, List
 
@@ -34,6 +33,8 @@ class BusinessUpdate(BaseModel):
     address: Optional[str] = Field(None, min_length=5)
     photos: Optional[List[str]] = None
     categories: Optional[List[str]] = None
+    # --- ¡ESTA ES LA LÍNEA QUE FALTABA! ---
+    logo_url: Optional[str] = None
 
 class BusinessResponse(BusinessBase):
     id: str
