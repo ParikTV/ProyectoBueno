@@ -46,7 +46,7 @@ async def get_business_by_id(business_id: str, db: AsyncIOMotorDatabase = Depend
     return convert_business_to_response(business)
 
 
-@router.post("/my-business/", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/my-business", response_model=BusinessResponse, status_code=status.HTTP_201_CREATED)
 async def create_my_business(business_in: BusinessCreate, db: AsyncIOMotorDatabase = Depends(get_database), current_user: UserResponse = Depends(get_current_user)):
     owner_id = str(current_user.id)
     business = await crud_business.create_business(db, business_in, owner_id)
