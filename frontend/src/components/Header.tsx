@@ -2,15 +2,16 @@
 
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import styles from '@/styles/Header.module.css';
 import { ExtendedPage } from '@/App';
+import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
+import ColorModeSelect from '../themes/ColorModeSelect'; // Importamos el selector de tema
 
 interface HeaderProps {
     navigateTo: (page: ExtendedPage) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
-    const { token, logout, user } = useAuth(); 
+    const { token, logout, user } = useAuth();
 
     const handleLogout = () => {
         logout();
@@ -18,34 +19,38 @@ export const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
     };
 
     return (
-        <header className={styles.header}>
-            <div className={styles.headerNav}>
-                <h1 onClick={() => navigateTo('home')}>ServiBook</h1>
-                <nav className={styles.navLinks}>
+        <AppBar position="static" elevation={1} color="default" sx={{ bgcolor: 'background.paper' }}>
+            <Toolbar sx={{ maxWidth: '1280px', width: '100%', margin: '0 auto' }}>
+                <Typography 
+                    variant="h6" 
+                    component="div" 
+                    sx={{ flexGrow: 1, fontWeight: 'bold', cursor: 'pointer' }}
+                    onClick={() => navigateTo('home')}
+                >
+                    ServiBook
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     {token && user ? (
                         <>
-                            {/* --- BOTÓN DE PRUEBA ELIMINADO DE AQUÍ --- */}
-                            
-                            <button onClick={() => navigateTo('profile')}>Mi Perfil</button>
-                            
+                            <Button color="inherit" onClick={() => navigateTo('profile')}>Mi Perfil</Button>
                             {user.role === 'dueño' && (
-                                <button onClick={() => navigateTo('ownerDashboard')}>Mi Negocio</button>
+                                <Button color="inherit" onClick={() => navigateTo('ownerDashboard')}>Mi Negocio</Button>
                             )}
                             {user.role === 'admin' && (
-                                <button onClick={() => navigateTo('admin')}>Panel Admin</button>
+                                <Button color="inherit" onClick={() => navigateTo('admin')}>Panel Admin</Button>
                             )}
-                            
-                            <button onClick={() => navigateTo('appointments')}>Mis Citas</button>
-                            <button onClick={handleLogout}>Cerrar Sesión</button>
+                            <Button color="inherit" onClick={() => navigateTo('appointments')}>Mis Citas</Button>
+                            <Button color="inherit" onClick={handleLogout}>Cerrar Sesión</Button>
                         </>
                     ) : (
                         <>
-                            <button onClick={() => navigateTo('login')}>Iniciar Sesión</button>
-                            <button onClick={() => navigateTo('register')} className={styles.buttonSignUp}>Registrarse</button>
+                            <Button color="inherit" onClick={() => navigateTo('login')}>Iniciar Sesión</Button>
+                            <Button variant="contained" onClick={() => navigateTo('register')}>Registrarse</Button>
                         </>
                     )}
-                </nav>
-            </div>
-        </header>
+                    <ColorModeSelect size="small" />
+                </Box>
+            </Toolbar>
+        </AppBar>
     );
 };

@@ -2,10 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import styles from '@/styles/AppointmentsPage.module.css';
-import commonStyles from '@/styles/Common.module.css';
 import { API_BASE_URL } from '@/services/api';
 import { Appointment, UserResponse } from '@/types';
+import {
+    Box,
+    Typography,
+    Paper,
+    CircularProgress,
+    Alert,
+    Stack,
+    Divider,
+} from '@mui/material';
 
 interface OwnerAppointmentsPageProps {
     businessId: string;
@@ -26,9 +33,11 @@ export const OwnerAppointmentsPage: React.FC<OwnerAppointmentsPageProps> = ({ bu
                 return;
             }
             try {
+                // 1. Obtener las citas del negocio
                 const appointmentsResponse = await fetch(`${API_BASE_URL}/appointments/business/${businessId}`, {
                     headers: { 'Authorization': `Bearer ${token}` },
                 });
+
                 if (!appointmentsResponse.ok) {
                     if (appointmentsResponse.status === 401) logout();
                     throw new Error("No se pudieron cargar las citas de este negocio.");
@@ -36,20 +45,25 @@ export const OwnerAppointmentsPage: React.FC<OwnerAppointmentsPageProps> = ({ bu
                 const appointmentsData: Appointment[] = await appointmentsResponse.json();
                 setAppointments(appointmentsData);
 
-                // Obtener los datos de usuario por cada cita
+                // 2. Obtener los datos de usuario para cada cita
                 const usersMap: Record<string, UserResponse> = {};
-                for (const app of appointmentsData) {
+                // Usamos Promise.all para hacer las peticiones de usuario en paralelo y mejorar el rendimiento
+                const userPromises = appointmentsData.map(app => {
                     const userId = app.user_id;
                     if (userId && !usersMap[userId]) {
-                        const userResponse = await fetch(`${API_BASE_URL}/users/${userId}`, {
+                        return fetch(`${API_BASE_URL}/users/${userId}`, {
                             headers: { 'Authorization': `Bearer ${token}` },
-                        });
-                        if (userResponse.ok) {
-                            const userData: UserResponse = await userResponse.json();
-                            usersMap[userId] = userData;
-                        }
+                        }).then(res => res.ok ? res.json() : null);
                     }
-                }
+                    return Promise.resolve(null);
+                });
+
+                const usersData = await Promise.all(userPromises);
+                usersData.forEach(userData => {
+                    if (userData) {
+                        usersMap[userData.id] = userData;
+                    }
+                });
                 setUsers(usersMap);
 
             } catch (err: any) {
@@ -62,36 +76,63 @@ export const OwnerAppointmentsPage: React.FC<OwnerAppointmentsPageProps> = ({ bu
         fetchAppointmentsAndUsers();
     }, [token, logout, businessId]);
 
-    if (isLoading) return <div className={styles.pageContainer}><p>Cargando las citas del negocio...</p></div>;
-    if (error) return <div className={styles.pageContainer}><p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p></div>;
+    if (isLoading) return <Box sx={{ textAlign: 'center', p: 4 }}><CircularProgress /></Box>;
+    if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert></Box>;
 
     return (
-        <div className={styles.pageContainer}>
-            <h2 className={styles.pageHeader}>Reservas del Negocio</h2>
+        <Box>
+            <Typography variant="h4" component="h1" fontWeight="600" gutterBottom>
+                Reservas del Negocio
+            </Typography>
+            <Divider sx={{ mb: 4 }} />
+            
             {appointments.length > 0 ? (
-                <div className={styles.appointmentList}>
+                <Stack spacing={3}>
                     {appointments.map(app => {
                         const user = users[app.user_id];
                         const appointmentDate = new Date(app.appointment_time);
                         return (
-                            <div key={app.id || (app as any)._id} className={styles.appointmentCard}>
-                                <div className={styles.serviceInfo}>
-                                    <h3>{user?.full_name || 'Usuario Desconocido'}</h3>
-                                    <p>{user?.email || 'Email no disponible'}</p>
-                                </div>
-                                <div className={styles.appointmentDetails}>
-                                    <strong>{appointmentDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>
-                                    <span>{appointmentDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
-                                </div>
-                            </div>
+                            <Paper 
+                                key={app.id || (app as any)._id} 
+                                elevation={2}
+                                sx={{
+                                    p: { xs: 2, md: 3 },
+                                    display: 'flex',
+                                    flexDirection: { xs: 'column', sm: 'row' },
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    gap: 2,
+                                    borderRadius: 3
+                                }}
+                            >
+                                <Box>
+                                    <Typography variant="h6" fontWeight="600">{user?.full_name || 'Usuario Desconocido'}</Typography>
+                                    <Typography variant="body2" color="text.secondary">{user?.email || 'Email no disponible'}</Typography>
+                                </Box>
+                                <Box sx={{ 
+                                    bgcolor: 'action.hover', 
+                                    p: 2, 
+                                    borderRadius: 2, 
+                                    textAlign: { xs: 'left', sm: 'center' },
+                                    width: { xs: '100%', sm: 'auto' },
+                                    flexShrink: 0
+                                }}>
+                                    <Typography fontWeight="bold">
+                                        {appointmentDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </Typography>
+                                    <Typography color="primary" fontWeight="bold">
+                                        {appointmentDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                                    </Typography>
+                                </Box>
+                            </Paper>
                         );
                     })}
-                </div>
+                </Stack>
             ) : (
-                <div className={styles.noAppointments}>
-                    <p>Este negocio aún no tiene ninguna cita reservada.</p>
-                </div>
+                <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'action.hover' }}>
+                    <Typography color="text.secondary">Este negocio aún no tiene ninguna cita reservada.</Typography>
+                </Paper>
             )}
-        </div>
+        </Box>
     );
 };

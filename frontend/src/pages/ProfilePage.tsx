@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import commonStyles from '@/styles/Common.module.css';
-import pageStyles from '@/styles/ProfilePage.module.css';
 import { API_BASE_URL } from '@/services/api';
 import { UserResponse } from '@/types';
 import { LocationPicker } from '@/components/LocationPicker';
 
+// --- MUI Component Imports ---
+import { Box, Typography, Button, Paper, TextField, CircularProgress, Alert, Stack, Divider } from '@mui/material';
+// --- Framer Motion for Animations ---
+import { motion } from 'framer-motion';
+
 export const ProfilePage: React.FC = () => {
-    // MODIFICADO: Se obtiene la función para refrescar el contexto del usuario.
     const { user: initialUser, token, fetchUser: fetchUserFromContext } = useAuth();
     
     const [profile, setProfile] = useState<UserResponse | null>(initialUser);
@@ -42,15 +44,9 @@ export const ProfilePage: React.FC = () => {
                 const data = await response.json();
                 setProfile(data);
                 setEditFormData({ full_name: data.full_name || '', phone_number: data.phone_number || '' });
-
-                // --- ¡ESTA ES LA LÓGICA CLAVE DE LA SOLUCIÓN! ---
-                // Si el rol en la base de datos es 'dueño' pero en nuestro contexto
-                // todavía figura como 'usuario', significa que acaba de ser aprobado.
                 if (data.role === 'dueño' && initialUser?.role === 'usuario') {
-                    // Forzamos una actualización completa del contexto de autenticación.
                     await fetchUserFromContext();
                 }
-
             } catch (err: any) {
                 setError(err.message);
             } finally {
@@ -58,9 +54,9 @@ export const ProfilePage: React.FC = () => {
             }
         };
         fetchProfile();
-    // MODIFICADO: Se añaden las dependencias para que el efecto se vuelva a ejecutar si cambian.
     }, [token, initialUser, fetchUserFromContext]);
 
+    // ... (el resto de tus funciones handlers se mantienen igual)
     const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
     };
@@ -75,9 +71,7 @@ export const ProfilePage: React.FC = () => {
 
     const handleUpdateProfile = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setError(null);
-        setSuccess(null);
-        setIsLoading(true);
+        setError(null); setSuccess(null); setIsLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/users/me`, {
                 method: 'PUT',
@@ -86,8 +80,8 @@ export const ProfilePage: React.FC = () => {
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.detail || "No se pudo actualizar el perfil.");
-            setProfile(data); // Actualiza el perfil local
-            await fetchUserFromContext(); // Actualiza el contexto global
+            setProfile(data);
+            await fetchUserFromContext();
             setSuccess("¡Perfil actualizado con éxito!");
             setIsEditing(false);
         } catch (err: any) {
@@ -103,9 +97,7 @@ export const ProfilePage: React.FC = () => {
             alert("Por favor, selecciona una ubicación en el mapa.");
             return;
         }
-        setError(null);
-        setSuccess(null);
-        setIsLoading(true);
+        setError(null); setSuccess(null); setIsLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/users/me/request-owner`, {
                 method: 'POST',
@@ -114,8 +106,8 @@ export const ProfilePage: React.FC = () => {
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.detail || "No se pudo enviar la solicitud.");
-            setProfile(data); // Actualiza el perfil local con la nueva solicitud
-            await fetchUserFromContext(); // Actualiza el contexto global
+            setProfile(data);
+            await fetchUserFromContext();
             setSuccess("¡Solicitud para ser dueño enviada con éxito! El administrador la revisará pronto.");
         } catch (err: any) {
             setError(err.message);
@@ -124,97 +116,126 @@ export const ProfilePage: React.FC = () => {
         }
     };
 
-    if (isLoading) return <div className={pageStyles.pageContainer}><p>Cargando perfil...</p></div>;
-    if (error) return <div className={pageStyles.pageContainer}><p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p></div>;
-    if (!profile) return <div className={pageStyles.pageContainer}><p>No se encontró el perfil.</p></div>;
+    if (isLoading) return <Box sx={{ textAlign: 'center', p: 4 }}><CircularProgress /></Box>;
+    if (error && !profile) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert></Box>;
+    if (!profile) return <Box sx={{ p: 4 }}><Alert severity="warning">No se encontró el perfil.</Alert></Box>;
 
     const renderOwnerRequestSection = () => {
         if (profile.role === 'usuario' && !profile.owner_request) {
             return (
-                <div className={commonStyles.formContainer} style={{marginTop: '2rem', maxWidth: '600px'}}>
-                    <h2>Solicitar ser Dueño de un Servicio</h2>
-                    <p style={{textAlign: 'center', marginBottom: '1.5rem'}}>Completa los datos de tu negocio para que un administrador pueda revisar tu solicitud.</p>
-                    <form onSubmit={handleOwnerRequestSubmit}>
-                        <div className={commonStyles.formGroup}>
-                            <label htmlFor="business_name">Nombre del Negocio</label>
-                            <input type="text" id="business_name" name="business_name" value={ownerRequestData.business_name} onChange={handleOwnerRequestChange} required />
-                        </div>
-                        
-                        <div className={commonStyles.formGroup}>
-                            <label>Dirección del Negocio (Haz clic en el mapa para seleccionar)</label>
-                            <LocationPicker onLocationSelect={handleLocationSelect} />
-                            <input 
-                                type="text" 
-                                value={ownerRequestData.address} 
-                                readOnly 
-                                placeholder="La dirección aparecerá aquí..." 
-                                style={{marginTop: '0.5rem', backgroundColor: '#f9fafb'}}
-                            />
-                        </div>
-                        
-                        <div className={commonStyles.formGroup}>
-                            <label htmlFor="logo_url">URL del Logo o Foto Principal (Opcional)</label>
-                            <input type="url" id="logo_url" name="logo_url" placeholder="https://ejemplo.com/logo.png" value={ownerRequestData.logo_url} onChange={handleOwnerRequestChange} />
-                        </div>
-                        <div className={commonStyles.formGroup}>
-                            <label htmlFor="business_description">Descripción Breve del Negocio</label>
-                            <textarea id="business_description" name="business_description" value={ownerRequestData.business_description} onChange={handleOwnerRequestChange} required style={{ width: '100%', minHeight: '100px', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem' }} />
-                        </div>
-                        <button type="submit" className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} disabled={isLoading}>{isLoading ? 'Enviando...' : 'Enviar Solicitud'}</button>
-                    </form>
-                </div>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
+                >
+                    <Paper component="section" sx={{ p: { xs: 2, md: 4 }, mt: 4, width: '100%', maxWidth: '800px' }}> {/* Formulario más ancho */}
+                        <Box sx={{ borderBottom: 1, borderColor: 'divider', pb: 2, mb: 3 }}>
+                            <Typography variant="h5" component="h2" fontWeight="600">
+                                Conviértete en Socio de ServiBook
+                            </Typography>
+                            <Typography color="text.secondary" sx={{ mt: 1 }}>
+                                Registra los detalles de tu negocio para empezar a recibir clientes.
+                            </Typography>
+                        </Box>
+                        <form onSubmit={handleOwnerRequestSubmit}>
+                            <Stack spacing={3}>
+                                <Stack direction={{xs: 'column', sm: 'row'}} spacing={3}>
+                                    <TextField label="Nombre del Negocio" name="business_name" value={ownerRequestData.business_name} onChange={handleOwnerRequestChange} required fullWidth />
+                                    <TextField label="URL del Logo o Foto Principal" type="url" name="logo_url" placeholder="https://ejemplo.com/logo.png" value={ownerRequestData.logo_url} onChange={handleOwnerRequestChange} fullWidth />
+                                </Stack>
+                                <TextField label="Describe tu Negocio" name="business_description" value={ownerRequestData.business_description} onChange={handleOwnerRequestChange} required multiline rows={4} fullWidth />
+                                
+                                <Divider sx={{ my: 2 }} />
+
+                                <Box>
+                                    <Typography fontWeight="600" gutterBottom>
+                                        Ubicación del Negocio
+                                    </Typography>
+                                    <Typography variant="caption" color="text.secondary" display="block" sx={{mb: 1.5}}>
+                                        Busca y selecciona la dirección exacta en el mapa.
+                                    </Typography>
+                                    <Box sx={{ borderRadius: 2, overflow: 'hidden', border: 1, borderColor: 'divider', p: 0.5 }}>
+                                        <LocationPicker onLocationSelect={handleLocationSelect} />
+                                    </Box>
+                                    <TextField 
+                                        label="Dirección Seleccionada"
+                                        value={ownerRequestData.address} 
+                                        InputProps={{ readOnly: true }}
+                                        fullWidth 
+                                        sx={{ mt: 2 }} 
+                                    />
+                                </Box>
+                            
+                                <Button 
+                                    type="submit" 
+                                    variant="contained" 
+                                    size="large"
+                                    disabled={isLoading}
+                                    sx={{ alignSelf: 'flex-start', fontWeight: 'bold' }}
+                                >
+                                    {isLoading ? 'Enviando...' : 'Enviar Solicitud de Socio'}
+                                </Button>
+                            </Stack>
+                        </form>
+                    </Paper>
+                </motion.div>
             );
         }
         if (profile.owner_request) {
-             const statusStyle = profile.owner_request.status === 'pending' 
-                ? commonStyles.alertSuccess 
-                : profile.owner_request.status === 'approved'
-                ? commonStyles.alertSuccess
-                : commonStyles.alertError;
-
+             const status = profile.owner_request.status;
              return (
-                 <div className={`${commonStyles.alert} ${statusStyle}`} style={{marginTop: '2rem', maxWidth: '600px'}}>
-                     <p style={{margin: '0'}}><strong>Estado de tu solicitud para ser Dueño:</strong> {profile.owner_request.status.toUpperCase()}</p>
-                 </div>
+                 <Alert severity={status === 'approved' ? 'success' : status === 'pending' ? 'info' : 'error'} sx={{ mt: 4, maxWidth: '800px', width: '100%' }}>
+                     <strong>Estado de tu solicitud para ser Dueño:</strong> {status.toUpperCase()}
+                 </Alert>
              );
         }
         return null;
     };
 
+    const ProfileDetail = ({ label, value }: { label: string; value: React.ReactNode }) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5, flexWrap: 'wrap' }}>
+            <Typography fontWeight="bold" sx={{ width: '180px', flexShrink: 0 }}>{label}:</Typography>
+            <Typography color="text.secondary">{value}</Typography>
+        </Box>
+    );
+
     return (
-        <div className={pageStyles.pageContainer} style={{flexDirection: 'column', alignItems: 'center'}}>
-            <div className={commonStyles.formContainer} style={{maxWidth: '600px'}}>
-                <div className={pageStyles.profileHeader}>
-                    <h2>Mi Perfil</h2>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+            <Paper sx={{ p: { xs: 2, md: 4 }, width: '100%', maxWidth: '800px' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, borderBottom: 1, borderColor: 'divider', pb: 2 }}>
+                    <Typography variant="h4" component="h1" fontWeight="600">Mi Perfil</Typography>
                     {!isEditing && (
-                        <button className={commonStyles.buttonSecondary} onClick={() => setIsEditing(true)}>
-                            Editar Perfil
-                        </button>
+                        <Button variant="outlined" onClick={() => setIsEditing(true)}>Editar Perfil</Button>
                     )}
-                </div>
-                {success && <p className={`${commonStyles.alert} ${commonStyles.alertSuccess}`}>{success}</p>}
+                </Box>
+                
+                {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
+                {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
                 
                 {isEditing ? (
                     <form onSubmit={handleUpdateProfile}>
-                        <div className={commonStyles.formGroup}><label htmlFor="full_name">Nombre Completo</label><input type="text" id="full_name" name="full_name" value={editFormData.full_name} onChange={handleEditFormChange} /></div>
-                        <div className={commonStyles.formGroup}><label htmlFor="phone_number">Número de Teléfono</label><input type="tel" id="phone_number" name="phone_number" value={editFormData.phone_number} onChange={handleEditFormChange} /></div>
-                        <div className={commonStyles.formGroup}><label>Correo Electrónico</label><input type="email" value={profile.email} disabled /></div>
-                        <div className={commonStyles.actionButtons}>
-                            <button type="submit" className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} disabled={isLoading}>{isLoading ? 'Guardando...' : 'Guardar Cambios'}</button>
-                            <button type="button" className={`${commonStyles.button} ${commonStyles.buttonSecondary}`} onClick={() => setIsEditing(false)} disabled={isLoading}>Cancelar</button>
-                        </div>
+                        <Stack spacing={2}>
+                            <TextField label="Nombre Completo" name="full_name" value={editFormData.full_name} onChange={handleEditFormChange} fullWidth />
+                            <TextField label="Número de Teléfono" name="phone_number" value={editFormData.phone_number} onChange={handleEditFormChange} fullWidth />
+                            <TextField label="Correo Electrónico" value={profile.email} disabled fullWidth />
+                            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 2 }}>
+                                <Button variant="outlined" onClick={() => setIsEditing(false)} disabled={isLoading}>Cancelar</Button>
+                                <Button type="submit" variant="contained" disabled={isLoading}>{isLoading ? 'Guardando...' : 'Guardar Cambios'}</Button>
+                            </Box>
+                        </Stack>
                     </form>
                 ) : (
-                    <div className={pageStyles.profileInfo}>
-                        <p><strong>Rol:</strong> <span style={{fontWeight: 'bold', color: '#4f46e5', textTransform: 'capitalize'}}>{profile.role}</span></p>
-                        <p><strong>Nombre Completo:</strong> {profile.full_name || 'No especificado'}</p>
-                        <p><strong>Teléfono:</strong> {profile.phone_number || 'No especificado'}</p>
-                        <p><strong>Correo Electrónico:</strong> {profile.email}</p>
-                        <p><strong>Miembro desde:</strong> {new Date(profile.created_at).toLocaleDateString()}</p>
-                    </div>
+                    <Box>
+                        <ProfileDetail label="Rol" value={<Typography component="span" fontWeight="bold" color="primary.main" sx={{textTransform: 'capitalize'}}>{profile.role}</Typography>} />
+                        <ProfileDetail label="Nombre Completo" value={profile.full_name || 'No especificado'} />
+                        <ProfileDetail label="Teléfono" value={profile.phone_number || 'No especificado'} />
+                        <ProfileDetail label="Correo Electrónico" value={profile.email} />
+                        <ProfileDetail label="Miembro desde" value={new Date(profile.created_at).toLocaleDateString()} />
+                    </Box>
                 )}
-            </div>
+            </Paper>
             {renderOwnerRequestSection()}
-        </div>
+        </Box>
     );
 };

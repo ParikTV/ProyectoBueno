@@ -2,30 +2,55 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import styles from '@/styles/AppointmentsPage.module.css';
-import commonStyles from '@/styles/Common.module.css';
 import { API_BASE_URL } from '@/services/api';
 import { Appointment, Business } from '@/types';
 
+// --- MUI Component Imports ---
+import { Box, Typography, Paper, CircularProgress, Alert, Stack, Divider } from '@mui/material';
+
+// --- Componente AppointmentCard (Reestilizado con MUI) ---
 const AppointmentCard: React.FC<{ appointment: Appointment, business?: Business }> = ({ appointment, business }) => {
     const appointmentDate = new Date(appointment.appointment_time);
     const displayCategories = business?.categories.join(', ') || 'N/A';
 
     return (
-        <div className={styles.appointmentCard}>
-            <div className={styles.serviceInfo}>
-                <h3>{business?.name || 'Negocio Desconocido'}</h3>
-                <p>{business?.address || 'Ubicación no disponible'}</p>
-                <p>Categoría: {displayCategories}</p>
-            </div>
-            <div className={styles.appointmentDetails}>
-                <strong>{appointmentDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</strong>
-                <span>{appointmentDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}</span>
-            </div>
-        </div>
+        <Paper 
+            elevation={2} 
+            sx={{
+                p: { xs: 2, md: 3 },
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 2,
+                borderRadius: 3
+            }}
+        >
+            <Box>
+                <Typography variant="h6" fontWeight="600">{business?.name || 'Negocio Desconocido'}</Typography>
+                <Typography variant="body2" color="text.secondary">{business?.address || 'Ubicación no disponible'}</Typography>
+                <Typography variant="caption" color="text.secondary">Categoría: {displayCategories}</Typography>
+            </Box>
+            <Box sx={{ 
+                bgcolor: 'action.hover', 
+                p: 2, 
+                borderRadius: 2, 
+                textAlign: { xs: 'left', sm: 'center' },
+                width: { xs: '100%', sm: 'auto' },
+                flexShrink: 0
+            }}>
+                <Typography fontWeight="bold">
+                    {appointmentDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </Typography>
+                <Typography color="primary" fontWeight="bold">
+                    {appointmentDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                </Typography>
+            </Box>
+        </Paper>
     );
 };
 
+// --- Página Principal de Mis Citas (Reestilizada) ---
 export const AppointmentsPage: React.FC = () => {
     const { token, logout } = useAuth();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -75,28 +100,28 @@ export const AppointmentsPage: React.FC = () => {
         fetchAppointmentsAndBusinesses();
     }, [token, logout]);
 
-    if (isLoading) return <div className={styles.pageContainer}><p>Cargando tus citas...</p></div>;
-    if (error) return <div className={styles.pageContainer}><p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p></div>;
+    if (isLoading) return <Box sx={{ textAlign: 'center', p: 4 }}><CircularProgress /></Box>;
+    if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert></Box>;
 
     return (
-        <div className={styles.pageContainer}>
-            <h2 className={styles.pageHeader}>Mis Citas</h2>
+        <Box>
+            <Typography variant="h4" component="h1" fontWeight="600" gutterBottom>Mis Citas</Typography>
+            <Divider sx={{ mb: 4 }} />
+            
             {appointments.length > 0 ? (
-                <div className={styles.appointmentList}>
+                <Stack spacing={3}>
                     {appointments.map(app => {
-                        // --- CAMBIO CLAVE AQUÍ ---
-                        // Usamos app.business_id para encontrar el negocio
                         const businessToShow = businesses[app.business_id];
                         return (
                             <AppointmentCard key={app.id || (app as any)._id} appointment={app} business={businessToShow} />
                         );
                     })}
-                </div>
+                </Stack>
             ) : (
-                <div className={styles.noAppointments}>
-                    <p>Aún no tienes ninguna cita reservada.</p>
-                </div>
+                <Paper sx={{ p: 4, textAlign: 'center' }}>
+                    <Typography color="text.secondary">Aún no tienes ninguna cita reservada.</Typography>
+                </Paper>
             )}
-        </div>
+        </Box>
     );
 };

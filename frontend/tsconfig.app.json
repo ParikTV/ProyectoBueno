@@ -29,5 +29,9 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    "theme.ts"
+  ]
+  
 }

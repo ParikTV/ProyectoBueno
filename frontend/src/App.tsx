@@ -1,12 +1,9 @@
 // src/App.tsx
 
-import React, { useState } from 'react';
-import styles from '@/styles/App.module.css';
+import { useState } from 'react'; // FIX: Se elimina la importación de 'React' que no se usa
+import { Box, Typography } from '@mui/material';
 
-// --- NUEVA IMPORTACIÓN ---
-// Importamos el MapProvider que se encargará de cargar la API de Google Maps.
 import { MapProvider } from './context/MapProvider';
-
 import { Header } from '@/components/Header';
 import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
@@ -60,20 +57,47 @@ export default function App() {
     };
 
     return (
-        // --- CAMBIO PRINCIPAL ---
-        // Envolvemos toda la aplicación con MapProvider.
-        // Esto asegura que la API de Google se cargue antes de mostrar cualquier página,
-        // eliminando los problemas de "espacios en blanco".
         <MapProvider>
-            <div className={styles.appContainer}>
+            <Box sx={(theme) => ({
+                minHeight: '100vh',
+                display: 'flex',
+                flexDirection: 'column',
+                bgcolor: 'background.default',
+                '&::before': {
+                    content: '""',
+                    display: 'block',
+                    position: 'fixed',
+                    zIndex: -1,
+                    inset: 0,
+                    backgroundImage: 'radial-gradient(ellipse at 50% 50%, hsl(220, 35%, 97%), hsl(0, 0%, 100%))',
+                    ...theme.applyStyles('dark', {
+                        backgroundImage: 'radial-gradient(at 50% 50%, hsla(210, 100%, 16%, 0.3), hsl(220, 30%, 5%))',
+                    }),
+                    transition: 'background-image 0.3s ease-in-out',
+                },
+            })}>
                 <Header navigateTo={navigateTo} />
-                <main className={styles.mainContent}>
+                <Box component="main" sx={{
+                    maxWidth: '1280px',
+                    mx: 'auto',
+                    p: { xs: 2, md: 3 },
+                    width: '100%',
+                    flexGrow: 1,
+                }}>
                     {renderPage()}
-                </main>
-                <footer className={styles.footer}>
-                    <p>&copy; 2025 ServiBook. Todos los derechos reservados.</p>
-                </footer>
-            </div>
+                </Box>
+                <Box component="footer" sx={{
+                    bgcolor: 'background.paper',
+                    color: 'text.secondary',
+                    py: 3,
+                    textAlign: 'center',
+                    flexShrink: 0,
+                    borderTop: 1,
+                    borderColor: 'divider'
+                }}>
+                    <Typography variant="body2">&copy; {new Date().getFullYear()} ServiBook. Todos los derechos reservados.</Typography>
+                </Box>
+            </Box>
         </MapProvider>
     );
 };

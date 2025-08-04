@@ -1,49 +1,68 @@
 // src/components/ListingCard.tsx
 
-import React from 'react';
-import styles from '@/styles/Cards.module.css';
-import commonStyles from '@/styles/Common.module.css';
-import { StarIcon } from './Icons';
-import { Business } from '@/types';
+import { Card, CardActionArea, CardMedia, CardContent, Typography, Box, Rating } from '@mui/material';
+import { motion, Variants } from 'framer-motion';
+import { Business } from '../types';
 
 interface ListingCardProps {
-    business: Business;
-    onViewDetails: (businessId: string) => void;
+  business: Business;
+  onViewDetails: () => void;
 }
 
-export const ListingCard: React.FC<ListingCardProps> = ({ business, onViewDetails }) => {
-    // --- ¡LÍNEA CORREGIDA! ---
-    // Se prioriza la foto principal (logo_url). Si no existe,
-    // se muestra la primera de la galería. Si no hay ninguna, se muestra un placeholder.
-    const displayImage = business.logo_url || business.photos?.[0] || 'https://placehold.co/400x300/e2e8f0/4a5568?text=Sin+Imagen';
-    const displayCategories = business.categories.join(', ');
-
-    return (
-        <div className={styles.listingCard}>
-            <img 
-                src={displayImage} 
-                alt={business.name} 
-                onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/400x300/e2e8f0/4a5568?text=Error'; }}
-            />
-            <div className={styles.listingCardContent}>
-                <p className={styles.listingCardCategory}>{displayCategories || 'Sin categoría'}</p>
-                <h3 className={styles.listingCardName}>{business.name}</h3>
-                <div className={styles.listingCardRating}>
-                    <StarIcon />
-                    {/* El rating se mantiene aleatorio como estaba en el código original */}
-                    <span>{(Math.random() * (5 - 4.2) + 4.2).toFixed(1)}</span>
-                </div>
-                <p className={styles.listingCardLocation}>{business.address}</p>
-                <div className={commonStyles.actionButtons} style={{marginTop: 'auto', paddingTop: '1rem'}}>
-                    <button
-                        className={`${commonStyles.button} ${commonStyles.buttonPrimary}`}
-                        onClick={() => onViewDetails(business.id)}
-                        disabled={!business.id}
-                    >
-                        Ver Detalles
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
+const cardVariants: Variants = {
+  initial: { opacity: 0, y: 50 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
+  exit: { opacity: 0, y: -50, transition: { duration: 0.3, ease: 'easeIn' } },
+  hover: { y: -10, boxShadow: '0px 20px 30px rgba(0,0,0,0.15)', transition: { type: 'spring', stiffness: 200 } }
 };
+
+const ListingCard = ({ business, onViewDetails }: ListingCardProps) => {
+  const averageRating = 4.5; // Simulado
+
+  // FIX: Se usa la propiedad correcta 'logo_url' que viene de la API.
+  // También se incluye una imagen de respaldo por si 'logo_url' está vacío.
+  const imageUrl = business.logo_url || 'https://via.placeholder.com/300x180.png?text=Sin+Imagen';
+
+  return (
+    <motion.div
+      variants={cardVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      whileHover="hover"
+      layout
+      style={{ height: '100%' }}
+    >
+      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', borderRadius: 4, overflow: 'hidden' }}>
+        <CardActionArea onClick={onViewDetails} sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+          
+          <CardMedia
+            component="img"
+            height="180"
+            image={imageUrl}
+            alt={`Imagen de ${business.name}`}
+            // Agregamos un pequeño estilo para evitar que la imagen de respaldo se vea mal
+            sx={{ objectFit: 'cover' }}
+          />
+
+          <CardContent sx={{ flexGrow: 1, width: '100%' }}>
+            <Typography gutterBottom variant="h6" component="div" sx={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {business.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" noWrap sx={{ mb: 1 }}>
+              {business.description}
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', mt: 'auto' }}>
+              <Rating value={averageRating} precision={0.5} readOnly size="small" />
+              <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                ({averageRating.toFixed(1)})
+              </Typography>
+            </Box>
+          </CardContent>
+        </CardActionArea>
+      </Card>
+    </motion.div>
+  );
+};
+
+export default ListingCard;

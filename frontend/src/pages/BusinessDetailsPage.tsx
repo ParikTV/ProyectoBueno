@@ -2,14 +2,16 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '@/services/api';
-import { Business } from '@/types';
-import styles from '@/styles/DetailsPage.module.css';
-import commonStyles from '@/styles/Common.module.css';
+import { Business } from '@/types'; // FIX: 'Page' has been removed from this import
 import { useAuth } from '@/hooks/useAuth';
 import { ExtendedPage } from '@/App';
 import { LocationDisplay } from '@/components/LocationDisplay';
+// --- MUI Component Imports ---
+import { Box, Typography, Button, Paper, CircularProgress, Divider, TextField, IconButton } from '@mui/material';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
-// --- MODAL DE RESERVA (SIN CAMBIOS) ---
+// --- Booking Modal (Refactored with MUI) ---
 const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookingSuccess: () => void; }> = ({ business, onClose, onBookingSuccess }) => {
     const { token } = useAuth();
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -45,10 +47,7 @@ const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookin
             setError("Por favor, selecciona una hora.");
             return;
         }
-        setIsLoading(true);
-        setError('');
-        setSuccess('');
-
+        setIsLoading(true); setError(''); setSuccess('');
         try {
             const appointmentTime = `${selectedDate}T${selectedSlot}:00`;
             const res = await fetch(`${API_BASE_URL}/appointments/`, {
@@ -56,20 +55,13 @@ const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookin
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ business_id: business.id, appointment_time: appointmentTime })
             });
-
             if (!res.ok) {
                 const errData = await res.json();
                 throw new Error(errData.detail || "No se pudo crear la cita.");
             }
-
             const responseData = await res.json();
             setSuccess(`¡Cita reservada con éxito! ID: ${responseData.id || responseData._id}`);
-            
-            setTimeout(() => {
-                onBookingSuccess();
-                onClose();
-            }, 2000);
-
+            setTimeout(() => { onBookingSuccess(); onClose(); }, 2000);
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -78,49 +70,42 @@ const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookin
     };
 
     return (
-        <div className={styles.modalBackdrop} onClick={onClose}>
-            <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
-                <h2>Reservar en {business.name}</h2>
-                {error && <p className={`${commonStyles.alert} ${commonStyles.alertError}`}>{error}</p>}
-                {success && <p className={`${commonStyles.alert} ${commonStyles.alertSuccess}`}>{success}</p>}
-
-                <div className={commonStyles.formGroup}>
-                    <label>1. Elige una fecha</label>
-                    <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} min={new Date().toISOString().split('T')[0]} style={{width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem'}}/>
-                </div>
-
-                <div className={commonStyles.formGroup}>
-                    <label>2. Elige una hora disponible</label>
-                    {isLoadingSlots ? <p>Cargando horarios...</p> : (
-                        <div className={styles.timeSlotsGrid}>
-                            {availableSlots.length > 0 ? (
-                                availableSlots.map(slot => (
-                                    <button key={slot} onClick={() => setSelectedSlot(slot)} className={`${styles.timeSlot} ${selectedSlot === slot ? styles.selected : ''}`}>
-                                        {slot}
-                                    </button>
-                                ))
-                            ) : (
-                                <p>No hay horarios disponibles para este día.</p>
-                            )}
-                        </div>
+        <Box
+            onClick={onClose}
+            sx={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000 }}
+        >
+            <Paper onClick={e => e.stopPropagation()} sx={{ p: {xs: 2, sm: 4}, borderRadius: 4, width: '90%', maxWidth: '500px' }}>
+                <Typography variant="h5" component="h2" gutterBottom>Reservar en {business.name}</Typography>
+                {error && <Typography color="error" my={2}>{error}</Typography>}
+                {success && <Typography color="success.main" my={2}>{success}</Typography>}
+                <Box component="form" noValidate>
+                    <Typography fontWeight="bold" mt={2}>1. Elige una fecha</Typography>
+                    <TextField type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} fullWidth sx={{ mt: 1 }} />
+                    <Typography fontWeight="bold" mt={2}>2. Elige una hora disponible</Typography>
+                    {isLoadingSlots ? <CircularProgress sx={{ my: 2 }} /> : (
+                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 1, my: 2, maxHeight: '200px', overflowY: 'auto' }}>
+                            {availableSlots.length > 0 ? availableSlots.map(slot => (
+                                <Button key={slot} variant={selectedSlot === slot ? 'contained' : 'outlined'} onClick={() => setSelectedSlot(slot)}>
+                                    {slot}
+                                </Button>
+                            )) : <Typography>No hay horarios disponibles.</Typography>}
+                        </Box>
                     )}
-                </div>
-
-                <div className={commonStyles.actionButtons} style={{marginTop: '2rem'}}>
-                    <button className={commonStyles.buttonPrimary} onClick={handleBooking} disabled={!selectedSlot || isLoading || !!success}>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 2, mt: 3, flexDirection: {xs: 'column', sm: 'row'} }}>
+                    <Button variant="contained" onClick={handleBooking} disabled={!selectedSlot || isLoading || !!success} fullWidth>
                         {isLoading ? 'Confirmando...' : 'Confirmar Cita'}
-                    </button>
-                    <button className={commonStyles.buttonSecondary} onClick={onClose} disabled={isLoading}>
+                    </Button>
+                    <Button variant="outlined" onClick={onClose} disabled={isLoading} fullWidth>
                         Cancelar
-                    </button>
-                </div>
-            </div>
-        </div>
+                    </Button>
+                </Box>
+            </Paper>
+        </Box>
     );
 };
 
-
-// --- COMPONENTE PRINCIPAL DE LA PÁGINA (CON CARRUSEL AÑADIDO) ---
+// --- Business Details Page (Refactored with MUI) ---
 interface BusinessDetailsPageProps { 
     businessId: string; 
     navigateTo: (page: ExtendedPage) => void; 
@@ -131,7 +116,7 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
     const [business, setBusiness] = useState<Business | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [showBookingModal, setShowBookingModal] = useState(false);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0); // Estado para el carrusel
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     const fetchDetails = useCallback(async () => {
         setIsLoading(true);
@@ -148,36 +133,24 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
 
     useEffect(() => { fetchDetails(); }, [fetchDetails]);
     
-    // --- LÓGICA DEL CARRUSEL ---
     const allImages = React.useMemo(() => {
         if (!business) return [];
-        // La foto principal (logo_url) va primero, seguida del resto.
-        // Usamos Set para evitar duplicados si el logo_url también está en 'photos'.
         return Array.from(new Set([
             ...(business.logo_url ? [business.logo_url] : []),
             ...business.photos
         ]));
     }, [business]);
 
-    const goToPrevious = () => {
-        const isFirstImage = currentImageIndex === 0;
-        const newIndex = isFirstImage ? allImages.length - 1 : currentImageIndex - 1;
-        setCurrentImageIndex(newIndex);
-    };
+    const goToPrevious = () => setCurrentImageIndex(prev => (prev === 0 ? allImages.length - 1 : prev - 1));
+    const goToNext = () => setCurrentImageIndex(prev => (prev === allImages.length - 1 ? 0 : prev + 1));
 
-    const goToNext = () => {
-        const isLastImage = currentImageIndex === allImages.length - 1;
-        const newIndex = isLastImage ? 0 : currentImageIndex + 1;
-        setCurrentImageIndex(newIndex);
-    };
-
-    if (isLoading) return <div style={{textAlign: 'center', padding: '2rem'}}>Cargando...</div>;
-    if (!business) return <div style={{textAlign: 'center', padding: '2rem'}}>Negocio no encontrado.</div>;
+    if (isLoading) return <Box sx={{ textAlign: 'center', p: 4 }}><CircularProgress /></Box>;
+    if (!business) return <Box sx={{ textAlign: 'center', p: 4 }}><Typography>Negocio no encontrado.</Typography></Box>;
     
     const canBook = business.status === 'published' && !!business.schedule;
     
     return (
-        <div className={styles.pageWrapper}>
+        <Box>
             {showBookingModal && (
                 <BookingModal 
                     business={business} 
@@ -186,49 +159,55 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
                 />
             )}
 
-            <div className={styles.detailsContainer}>
-                {/* --- SECCIÓN DE IMAGEN CONVERTIDA EN CARRUSEL --- */}
-                <div className={styles.imageColumn}>
-                    {allImages.length > 0 ? (
-                        <div className={styles.carouselContainer}>
-                            {allImages.length > 1 && (
-                                <>
-                                    <button onClick={goToPrevious} className={`${styles.carouselButton} ${styles.carouselButtonLeft}`}>&#10094;</button>
-                                    <button onClick={goToNext} className={`${styles.carouselButton} ${styles.carouselButtonRight}`}>&#10095;</button>
-                                </>
-                            )}
-                            <img 
-                                src={allImages[currentImageIndex]} 
-                                alt={`${business.name} - foto ${currentImageIndex + 1}`} 
-                                className={styles.mainImage}
-                            />
-                            <div className={styles.carouselDots}>
-                                {allImages.map((_, index) => (
-                                    <span 
-                                        key={index}
-                                        className={`${styles.carouselDot} ${currentImageIndex === index ? styles.activeDot : ''}`}
-                                        onClick={() => setCurrentImageIndex(index)}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    ) : (
-                         <img 
-                            src='https://placehold.co/600x400/e2e8f0/4a5568?text=Sin+Imagen' 
-                            alt={business.name} 
-                            className={styles.mainImage}
-                        />
+            <Paper elevation={4} sx={{
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', md: '3fr 4fr' },
+                gap: { xs: 3, md: 4 },
+                p: { xs: 2, md: 4 },
+                borderRadius: 4
+            }}>
+                {/* --- Image Carousel Section --- */}
+                <Box sx={{ position: 'relative', width: '100%', height: { xs: 300, md: 450 }, borderRadius: 2, overflow: 'hidden' }}>
+                    {allImages.length > 1 && (
+                        <>
+                            <IconButton onClick={goToPrevious} sx={{ position: 'absolute', top: '50%', left: 8, transform: 'translateY(-50%)', color: 'white', bgcolor: 'rgba(0,0,0,0.5)', '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' } }}>
+                                <ArrowBackIosNewIcon />
+                            </IconButton>
+                            <IconButton onClick={goToNext} sx={{ position: 'absolute', top: '50%', right: 8, transform: 'translateY(-50%)', color: 'white', bgcolor: 'rgba(0,0,0,0.5)', '&:hover': { bgcolor: 'rgba(0,0,0,0.8)' } }}>
+                                <ArrowForwardIosIcon />
+                            </IconButton>
+                        </>
                     )}
-                </div>
+                    <img 
+                        src={allImages[currentImageIndex] || 'https://placehold.co/600x400?text=Sin+Imagen'} 
+                        alt={business.name}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    <Box sx={{ position: 'absolute', bottom: 8, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 1 }}>
+                        {allImages.map((_, index) => (
+                            <Box key={index} onClick={() => setCurrentImageIndex(index)} sx={{
+                                width: 8, height: 8, borderRadius: '50%', cursor: 'pointer',
+                                bgcolor: currentImageIndex === index ? 'white' : 'rgba(255,255,255,0.5)',
+                            }}/>
+                        ))}
+                    </Box>
+                </Box>
 
-                <div className={styles.infoColumn}>
-                    <span className={styles.category}>{business.categories.join(', ') || 'Sin Categoría'}</span>
-                    <h1>{business.name}</h1>
-                    <p className={styles.address}>{business.address}</p>
+                {/* --- Info Section --- */}
+                <Box>
+                    <Typography color="text.secondary" fontWeight="bold" textTransform="uppercase">
+                        {business.categories.join(', ') || 'Sin Categoría'}
+                    </Typography>
+                    <Typography variant="h3" component="h1" fontWeight="bold" gutterBottom>
+                        {business.name}
+                    </Typography>
+                    <Typography color="text.secondary" variant="h6" sx={{ mb: 2 }}>
+                        {business.address}
+                    </Typography>
                     
-                    <button 
-                        className={`${commonStyles.button} ${commonStyles.buttonPrimary}`} 
-                        style={{width: 'auto', marginBottom: '1.5rem'}} 
+                    <Button 
+                        variant="contained" 
+                        size="large"
                         disabled={!canBook}
                         title={!canBook ? 'Este negocio no ha configurado su horario de citas' : 'Reservar una cita'}
                         onClick={() => { 
@@ -241,21 +220,21 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
                         }}
                     >
                         {canBook ? 'Reservar ahora' : 'Reservas no disponibles'}
-                    </button>
+                    </Button>
 
-                    <hr className={styles.divider} />
+                    <Divider sx={{ my: 3 }} />
                     
-                    <div className={styles.section}>
-                        <h4>Descripción</h4>
-                        <p className={styles.description}>{business.description}</p>
-                    </div>
+                    <Box mb={3}>
+                        <Typography variant="h5" fontWeight="600" gutterBottom>Descripción</Typography>
+                        <Typography color="text.secondary">{business.description}</Typography>
+                    </Box>
 
-                    <div className={styles.section}>
-                        <h4>Ubicación</h4>
+                    <Box>
+                        <Typography variant="h5" fontWeight="600" gutterBottom>Ubicación</Typography>
                         <LocationDisplay address={business.address} />
-                    </div>
-                </div>
-            </div>
-        </div>
+                    </Box>
+                </Box>
+            </Paper>
+        </Box>
     );
 };
