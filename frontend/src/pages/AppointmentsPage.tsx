@@ -6,51 +6,118 @@ import { API_BASE_URL } from '@/services/api';
 import { Appointment, Business } from '@/types';
 
 // --- MUI Component Imports ---
-import { Box, Typography, Paper, CircularProgress, Alert, Stack, Divider } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, Alert, Stack, Divider, Button, Dialog, DialogTitle, DialogContent } from '@mui/material';
+import QrCode2Icon from '@mui/icons-material/QrCode2';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 
-// --- Componente AppointmentCard (Reestilizado con MUI) ---
-const AppointmentCard: React.FC<{ appointment: Appointment, business?: Business }> = ({ appointment, business }) => {
-    const appointmentDate = new Date(appointment.appointment_time);
-    const displayCategories = business?.categories.join(', ') || 'N/A';
+// --- Componente para mostrar el QR (Ahora carga la imagen de forma segura) ---
+const QrModal: React.FC<{ appointmentId: string; onClose: () => void }> = ({ appointmentId, onClose }) => {
+    const { token } = useAuth();
+    const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        const fetchQrCode = async () => {
+            if (!token) return;
+            try {
+                const response = await fetch(`${API_BASE_URL}/appointments/${appointmentId}/qr`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error("No se pudo cargar el código QR.");
+                
+                const imageBlob = await response.blob();
+                const imageUrl = URL.createObjectURL(imageBlob);
+                setQrCodeUrl(imageUrl);
+            } catch (err: any) {
+                setError(err.message);
+            }
+        };
+        fetchQrCode();
+
+        // Limpieza: revocar la URL del objeto cuando el componente se desmonte
+        return () => {
+            if (qrCodeUrl) {
+                URL.revokeObjectURL(qrCodeUrl);
+            }
+        };
+    }, [appointmentId, token]); // Solo se ejecuta una vez
 
     return (
-        <Paper 
-            elevation={2} 
-            sx={{
-                p: { xs: 2, md: 3 },
-                display: 'flex',
-                flexDirection: { xs: 'column', sm: 'row' },
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 2,
-                borderRadius: 3
-            }}
-        >
-            <Box>
-                <Typography variant="h6" fontWeight="600">{business?.name || 'Negocio Desconocido'}</Typography>
-                <Typography variant="body2" color="text.secondary">{business?.address || 'Ubicación no disponible'}</Typography>
-                <Typography variant="caption" color="text.secondary">Categoría: {displayCategories}</Typography>
-            </Box>
-            <Box sx={{ 
-                bgcolor: 'action.hover', 
-                p: 2, 
-                borderRadius: 2, 
-                textAlign: { xs: 'left', sm: 'center' },
-                width: { xs: '100%', sm: 'auto' },
-                flexShrink: 0
-            }}>
-                <Typography fontWeight="bold">
-                    {appointmentDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        <Dialog open={true} onClose={onClose}>
+            <DialogTitle>Escanea para Validar tu Cita</DialogTitle>
+            <DialogContent sx={{textAlign: 'center'}}>
+                {error && <Alert severity="error">{error}</Alert>}
+                {!qrCodeUrl && !error && <CircularProgress />}
+                {qrCodeUrl && <img src={qrCodeUrl} alt="Código QR de la cita" style={{width: '256px', height: '256px'}} />}
+                <Typography variant="caption" display="block" sx={{mt: 1}}>
+                    El personal del negocio escaneará este código para confirmar tu reserva.
                 </Typography>
-                <Typography color="primary" fontWeight="bold">
-                    {appointmentDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                </Typography>
-            </Box>
-        </Paper>
+            </DialogContent>
+        </Dialog>
     );
 };
 
-// --- Página Principal de Mis Citas (Reestilizada) ---
+
+// --- Tarjeta de Cita Actualizada con la nueva lógica ---
+const AppointmentCard: React.FC<{ appointment: Appointment, business?: Business }> = ({ appointment, business }) => {
+    const { token } = useAuth(); // Obtenemos el token para las descargas
+    const appointmentDate = new Date(appointment.appointment_time);
+    const [showQr, setShowQr] = useState(false);
+    const appointmentId = appointment.id || (appointment as any)._id;
+
+    const handleDownloadPdf = async () => {
+        if (!token) {
+            alert("Necesitas estar autenticado.");
+            return;
+        }
+        try {
+            const response = await fetch(`${API_BASE_URL}/appointments/${appointmentId}/pdf`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error("No se pudo descargar el PDF.");
+
+            const pdfBlob = await response.blob();
+            const pdfUrl = URL.createObjectURL(pdfBlob);
+            window.open(pdfUrl, '_blank');
+            // Opcional: revocar la URL después de un tiempo para liberar memoria
+            setTimeout(() => URL.revokeObjectURL(pdfUrl), 100);
+        } catch (error) {
+            console.error("Error al descargar el PDF:", error);
+            alert("Ocurrió un error al descargar el comprobante.");
+        }
+    };
+
+    return (
+        <>
+            {showQr && <QrModal appointmentId={appointmentId} onClose={() => setShowQr(false)} />}
+            <Paper elevation={2} sx={{ p: { xs: 2, md: 3 }, borderRadius: 3 }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={2}>
+                    <Box>
+                        <Typography variant="h6" fontWeight="600">{business?.name || 'Negocio Desconocido'}</Typography>
+                        <Typography variant="body2" color="text.secondary">{business?.address || 'Ubicación no disponible'}</Typography>
+                        <Typography variant="caption" color="text.secondary">Categoría: {business?.categories.join(', ') || 'N/A'}</Typography>
+                    </Box>
+                    <Box sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 2, textAlign: { xs: 'left', sm: 'center' }, flexShrink: 0 }}>
+                        <Typography fontWeight="bold">
+                            {appointmentDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </Typography>
+                        <Typography color="primary" variant="h6" fontWeight="bold">
+                            {appointmentDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                        </Typography>
+                    </Box>
+                </Stack>
+                <Divider sx={{ my: 2 }} />
+                <Stack direction="row" spacing={2}>
+                    <Button variant="outlined" startIcon={<PictureAsPdfIcon />} onClick={handleDownloadPdf}>Descargar PDF</Button>
+                    <Button variant="outlined" startIcon={<QrCode2Icon />} onClick={() => setShowQr(true)}>Ver QR</Button>
+                </Stack>
+            </Paper>
+        </>
+    );
+};
+
+
+// --- Página Principal (sin cambios en la lógica de fetch) ---
 export const AppointmentsPage: React.FC = () => {
     const { token, logout } = useAuth();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -60,7 +127,7 @@ export const AppointmentsPage: React.FC = () => {
 
     useEffect(() => {
         const fetchAppointmentsAndBusinesses = async () => {
-            if (!token) {
+             if (!token) {
                 setError("No estás autenticado.");
                 setIsLoading(false);
                 return;
@@ -96,7 +163,6 @@ export const AppointmentsPage: React.FC = () => {
                 setIsLoading(false);
             }
         };
-
         fetchAppointmentsAndBusinesses();
     }, [token, logout]);
 
@@ -110,12 +176,9 @@ export const AppointmentsPage: React.FC = () => {
             
             {appointments.length > 0 ? (
                 <Stack spacing={3}>
-                    {appointments.map(app => {
-                        const businessToShow = businesses[app.business_id];
-                        return (
-                            <AppointmentCard key={app.id || (app as any)._id} appointment={app} business={businessToShow} />
-                        );
-                    })}
+                    {appointments.map(app => (
+                        <AppointmentCard key={app.id || (app as any)._id} appointment={app} business={businesses[app.business_id]} />
+                    ))}
                 </Stack>
             ) : (
                 <Paper sx={{ p: 4, textAlign: 'center' }}>
