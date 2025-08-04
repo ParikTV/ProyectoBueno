@@ -1,73 +1,88 @@
-// src/components/LocationDisplay.tsx
+// frontend/src/components/LocationDisplay.tsx
 
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker } from 'react-leaflet';
-import L from 'leaflet';
+import { GoogleMap, Marker } from '@react-google-maps/api';
 
-import 'leaflet/dist/leaflet.css';
-
-// Arreglo para un problema común con los íconos del marcador en React
-// @ts-ignore
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-});
+const containerStyle: React.CSSProperties = {
+  height: '250px',
+  width: '100%',
+  borderRadius: '0.5rem',
+  overflow: 'hidden',
+  border: '1px solid #d1d5db',
+  marginTop: '1rem',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#f3f4f6'
+};
 
 interface LocationDisplayProps {
-    address: string;
+  address: string;
 }
 
 export const LocationDisplay: React.FC<LocationDisplayProps> = ({ address }) => {
-    const [position, setPosition] = useState<L.LatLngTuple | null>(null);
-    const [loading, setLoading] = useState(true);
+  const [position, setPosition] = useState<google.maps.LatLngLiteral | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        const geocodeAddress = async () => {
-            setLoading(true);
-            try {
-                // Usamos la API de Nominatim para convertir la dirección a coordenadas
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`);
-                const data = await response.json();
+  useEffect(() => {
+    // Asegúrate de que la API de Google esté cargada antes de intentar usarla.
+    if (!window.google || !window.google.maps) {
+      console.warn("La API de Google Maps aún no está disponible.");
+      return;
+    }
 
-                if (data && data.length > 0) {
-                    // Si encontramos la ubicación, guardamos la latitud y longitud
-                    const { lat, lon } = data[0];
-                    setPosition([parseFloat(lat), parseFloat(lon)]);
-                } else {
-                    setPosition(null);
-                }
-            } catch (error) {
-                console.error("Error en la geocodificación:", error);
-                setPosition(null);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (address) {
-            geocodeAddress();
+    if (address) {
+      setIsLoading(true);
+      setError(null);
+      const geocoder = new window.google.maps.Geocoder();
+      
+      geocoder.geocode({ address }, (results, status) => {
+        if (status === 'OK' && results?.[0]) {
+          const location = results[0].geometry.location;
+          setPosition({ lat: location.lat(), lng: location.lng() });
+        } else {
+          // Si falla, guardamos el mensaje de error para mostrarlo.
+          console.error(`La geocodificación falló: ${status}`);
+          setError(`No se pudo encontrar la dirección en el mapa. (Error: ${status})`);
+          setPosition(null);
         }
-    }, [address]);
-
-    if (loading) {
-        return <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f3f4f6', borderRadius: '8px' }}>Cargando mapa...</div>;
+        setIsLoading(false);
+      });
+    } else {
+        setIsLoading(false);
+        setError("No se proporcionó ninguna dirección.");
     }
+  }, [address]);
 
-    if (!position) {
-        return <div style={{ height: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '8px' }}>No se pudo encontrar la ubicación en el mapa.</div>;
-    }
+  if (isLoading) {
+    return <div style={containerStyle}>Buscando ubicación...</div>;
+  }
+  
+  if (error) {
+     return <div style={{...containerStyle, backgroundColor: '#fee2e2', color: '#b91c1c'}}>{error}</div>;
+  }
 
+  if (position) {
     return (
-        <div style={{ height: '250px', width: '100%', borderRadius: '0.5rem', overflow: 'hidden', border: '1px solid #d1d5db', marginTop: '1rem' }}>
-            <MapContainer center={position} zoom={15} style={{ height: '100%', width: '100%' }}>
-                <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                />
-                <Marker position={position} />
-            </MapContainer>
-        </div>
+      <div style={{...containerStyle, border: '1px solid #d1d5db'}}>
+        <GoogleMap
+          mapContainerStyle={{ height: '100%', width: '100%' }}
+          center={position}
+          zoom={16}
+          options={{
+            fullscreenControl: false,
+            streetViewControl: false,
+            mapTypeControl: false,
+            zoomControl: false,
+            gestureHandling: 'none',
+          }}
+        >
+          <Marker position={position} />
+        </GoogleMap>
+      </div>
     );
+  }
+
+  return null; // No se muestra nada si no hay ni posición ni error
 };

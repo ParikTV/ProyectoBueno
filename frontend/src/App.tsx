@@ -3,6 +3,10 @@
 import React, { useState } from 'react';
 import styles from '@/styles/App.module.css';
 
+// --- NUEVA IMPORTACIÓN ---
+// Importamos el MapProvider que se encargará de cargar la API de Google Maps.
+import { MapProvider } from './context/MapProvider';
+
 import { Header } from '@/components/Header';
 import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
@@ -13,10 +17,8 @@ import { AdminPage } from '@/pages/AdminPage';
 import { OwnerDashboardPage } from '@/pages/OwnerDashboardPage';
 import { BusinessDetailsPage } from '@/pages/BusinessDetailsPage';
 import { OwnerAppointmentsPage } from '@/pages/OwnerAppointmentsPage';
-// --- LÍNEA ELIMINADA: Se quita la importación de la página de prueba ---
 import { Page } from '@/types';
 
-// --- LÍNEA MODIFICADA: Se quita 'testBooking' del tipo ---
 export type ExtendedPage = Page | 'ownerDashboard' | 'businessDetails' | 'ownerAppointments';
 
 export default function App() {
@@ -51,8 +53,6 @@ export default function App() {
                 if (!selectedBusinessId) { return <OwnerDashboardPage navigateTo={navigateTo} />; }
                 return <OwnerAppointmentsPage businessId={selectedBusinessId} />;
 
-            // --- BLOQUE ELIMINADO: Se quita el 'case' para la página de prueba ---
-
             case 'home': 
             default: 
                 return <HomePage navigateTo={navigateTo} />;
@@ -60,14 +60,20 @@ export default function App() {
     };
 
     return (
-        <div className={styles.appContainer}>
-            <Header navigateTo={navigateTo} />
-            <main className={styles.mainContent}>
-                {renderPage()}
-            </main>
-            <footer className={styles.footer}>
-                <p>&copy; 2025 ServiBook. Todos los derechos reservados.</p>
-            </footer>
-        </div>
+        // --- CAMBIO PRINCIPAL ---
+        // Envolvemos toda la aplicación con MapProvider.
+        // Esto asegura que la API de Google se cargue antes de mostrar cualquier página,
+        // eliminando los problemas de "espacios en blanco".
+        <MapProvider>
+            <div className={styles.appContainer}>
+                <Header navigateTo={navigateTo} />
+                <main className={styles.mainContent}>
+                    {renderPage()}
+                </main>
+                <footer className={styles.footer}>
+                    <p>&copy; 2025 ServiBook. Todos los derechos reservados.</p>
+                </footer>
+            </div>
+        </MapProvider>
     );
 };
