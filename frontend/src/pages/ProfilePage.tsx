@@ -7,7 +7,7 @@ import { UserResponse } from '@/types';
 import { LocationPicker } from '@/components/LocationPicker';
 
 // --- MUI Component Imports ---
-import { Box, Typography, Button, Paper, TextField, CircularProgress, Alert, Stack, Divider } from '@mui/material';
+import { Box, Typography, Button, Paper, TextField, CircularProgress, Alert, Stack, Divider, Avatar } from '@mui/material';
 // --- Framer Motion for Animations ---
 import { motion } from 'framer-motion';
 
@@ -20,7 +20,12 @@ export const ProfilePage: React.FC = () => {
     const [success, setSuccess] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     
-    const [editFormData, setEditFormData] = useState({ full_name: '', phone_number: '' });
+    // FIX: Se añade profile_picture_url al estado del formulario de edición
+    const [editFormData, setEditFormData] = useState({ 
+        full_name: '', 
+        phone_number: '',
+        profile_picture_url: '' 
+    });
     const [ownerRequestData, setOwnerRequestData] = useState({
         business_name: '',
         business_description: '',
@@ -43,7 +48,12 @@ export const ProfilePage: React.FC = () => {
                 if (!response.ok) throw new Error("No se pudo cargar el perfil.");
                 const data = await response.json();
                 setProfile(data);
-                setEditFormData({ full_name: data.full_name || '', phone_number: data.phone_number || '' });
+                // FIX: Se inicializa el formulario con todos los datos, incluyendo la foto
+                setEditFormData({ 
+                    full_name: data.full_name || '', 
+                    phone_number: data.phone_number || '',
+                    profile_picture_url: data.profile_picture_url || ''
+                });
                 if (data.role === 'dueño' && initialUser?.role === 'usuario') {
                     await fetchUserFromContext();
                 }
@@ -56,7 +66,6 @@ export const ProfilePage: React.FC = () => {
         fetchProfile();
     }, [token, initialUser, fetchUserFromContext]);
 
-    // ... (el resto de tus funciones handlers se mantienen igual)
     const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
     };
@@ -76,12 +85,13 @@ export const ProfilePage: React.FC = () => {
             const response = await fetch(`${API_BASE_URL}/users/me`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(editFormData),
+                body: JSON.stringify(editFormData), // El formulario ya incluye la URL de la foto
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.detail || "No se pudo actualizar el perfil.");
-            setProfile(data);
-            await fetchUserFromContext();
+            
+            await fetchUserFromContext(); // Esto actualiza el contexto global (y por ende el profile local)
+            
             setSuccess("¡Perfil actualizado con éxito!");
             setIsEditing(false);
         } catch (err: any) {
@@ -106,8 +116,9 @@ export const ProfilePage: React.FC = () => {
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.detail || "No se pudo enviar la solicitud.");
-            setProfile(data);
-            await fetchUserFromContext();
+            
+            await fetchUserFromContext(); // Actualizamos el contexto
+            
             setSuccess("¡Solicitud para ser dueño enviada con éxito! El administrador la revisará pronto.");
         } catch (err: any) {
             setError(err.message);
@@ -129,14 +140,10 @@ export const ProfilePage: React.FC = () => {
                     transition={{ duration: 0.5, ease: "easeOut" }}
                     style={{ width: '100%', display: 'flex', justifyContent: 'center' }}
                 >
-                    <Paper component="section" sx={{ p: { xs: 2, md: 4 }, mt: 4, width: '100%', maxWidth: '800px' }}> {/* Formulario más ancho */}
+                    <Paper component="section" sx={{ p: { xs: 2, md: 4 }, mt: 4, width: '100%', maxWidth: '800px' }}>
                         <Box sx={{ borderBottom: 1, borderColor: 'divider', pb: 2, mb: 3 }}>
-                            <Typography variant="h5" component="h2" fontWeight="600">
-                                Conviértete en Socio de ServiBook
-                            </Typography>
-                            <Typography color="text.secondary" sx={{ mt: 1 }}>
-                                Registra los detalles de tu negocio para empezar a recibir clientes.
-                            </Typography>
+                            <Typography variant="h5" component="h2" fontWeight="600">Conviértete en Socio de ServiBook</Typography>
+                            <Typography color="text.secondary" sx={{ mt: 1 }}>Registra los detalles de tu negocio para empezar a recibir clientes.</Typography>
                         </Box>
                         <form onSubmit={handleOwnerRequestSubmit}>
                             <Stack spacing={3}>
@@ -145,35 +152,16 @@ export const ProfilePage: React.FC = () => {
                                     <TextField label="URL del Logo o Foto Principal" type="url" name="logo_url" placeholder="https://ejemplo.com/logo.png" value={ownerRequestData.logo_url} onChange={handleOwnerRequestChange} fullWidth />
                                 </Stack>
                                 <TextField label="Describe tu Negocio" name="business_description" value={ownerRequestData.business_description} onChange={handleOwnerRequestChange} required multiline rows={4} fullWidth />
-                                
                                 <Divider sx={{ my: 2 }} />
-
                                 <Box>
-                                    <Typography fontWeight="600" gutterBottom>
-                                        Ubicación del Negocio
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary" display="block" sx={{mb: 1.5}}>
-                                        Busca y selecciona la dirección exacta en el mapa.
-                                    </Typography>
+                                    <Typography fontWeight="600" gutterBottom>Ubicación del Negocio</Typography>
+                                    <Typography variant="caption" color="text.secondary" display="block" sx={{mb: 1.5}}>Busca y selecciona la dirección exacta en el mapa.</Typography>
                                     <Box sx={{ borderRadius: 2, overflow: 'hidden', border: 1, borderColor: 'divider', p: 0.5 }}>
                                         <LocationPicker onLocationSelect={handleLocationSelect} />
                                     </Box>
-                                    <TextField 
-                                        label="Dirección Seleccionada"
-                                        value={ownerRequestData.address} 
-                                        InputProps={{ readOnly: true }}
-                                        fullWidth 
-                                        sx={{ mt: 2 }} 
-                                    />
+                                    <TextField label="Dirección Seleccionada" value={ownerRequestData.address} InputProps={{ readOnly: true }} fullWidth sx={{ mt: 2 }} />
                                 </Box>
-                            
-                                <Button 
-                                    type="submit" 
-                                    variant="contained" 
-                                    size="large"
-                                    disabled={isLoading}
-                                    sx={{ alignSelf: 'flex-start', fontWeight: 'bold' }}
-                                >
+                                <Button type="submit" variant="contained" size="large" disabled={isLoading} sx={{ alignSelf: 'flex-start', fontWeight: 'bold' }}>
                                     {isLoading ? 'Enviando...' : 'Enviar Solicitud de Socio'}
                                 </Button>
                             </Stack>
@@ -215,7 +203,19 @@ export const ProfilePage: React.FC = () => {
                 
                 {isEditing ? (
                     <form onSubmit={handleUpdateProfile}>
-                        <Stack spacing={2}>
+                        <Stack spacing={3}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                <Avatar sx={{ width: 80, height: 80 }} src={editFormData.profile_picture_url} />
+                                <TextField 
+                                    label="URL de la Foto de Perfil" 
+                                    name="profile_picture_url" 
+                                    value={editFormData.profile_picture_url} 
+                                    onChange={handleEditFormChange} 
+                                    fullWidth 
+                                    placeholder="https://ejemplo.com/imagen.png"
+                                />
+                            </Box>
+                            <Divider />
                             <TextField label="Nombre Completo" name="full_name" value={editFormData.full_name} onChange={handleEditFormChange} fullWidth />
                             <TextField label="Número de Teléfono" name="phone_number" value={editFormData.phone_number} onChange={handleEditFormChange} fullWidth />
                             <TextField label="Correo Electrónico" value={profile.email} disabled fullWidth />
@@ -226,12 +226,15 @@ export const ProfilePage: React.FC = () => {
                         </Stack>
                     </form>
                 ) : (
-                    <Box>
-                        <ProfileDetail label="Rol" value={<Typography component="span" fontWeight="bold" color="primary.main" sx={{textTransform: 'capitalize'}}>{profile.role}</Typography>} />
-                        <ProfileDetail label="Nombre Completo" value={profile.full_name || 'No especificado'} />
-                        <ProfileDetail label="Teléfono" value={profile.phone_number || 'No especificado'} />
-                        <ProfileDetail label="Correo Electrónico" value={profile.email} />
-                        <ProfileDetail label="Miembro desde" value={new Date(profile.created_at).toLocaleDateString()} />
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', gap: 4 }}>
+                        <Avatar sx={{ width: 120, height: 120, mb: { xs: 2, sm: 0 } }} src={profile.profile_picture_url} />
+                        <Box>
+                            <ProfileDetail label="Rol" value={<Typography component="span" fontWeight="bold" color="primary.main" sx={{textTransform: 'capitalize'}}>{profile.role}</Typography>} />
+                            <ProfileDetail label="Nombre Completo" value={profile.full_name || 'No especificado'} />
+                            <ProfileDetail label="Teléfono" value={profile.phone_number || 'No especificado'} />
+                            <ProfileDetail label="Correo Electrónico" value={profile.email} />
+                            <ProfileDetail label="Miembro desde" value={new Date(profile.created_at).toLocaleDateString()} />
+                        </Box>
                     </Box>
                 )}
             </Paper>

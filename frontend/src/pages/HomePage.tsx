@@ -1,7 +1,13 @@
 // src/pages/HomePage.tsx
 
 import React, { useState, useEffect } from 'react';
-import { Typography, Box, TextField, Button, Paper, InputAdornment, CircularProgress } from '@mui/material';
+// --- MUI & Map Component Imports ---
+import {
+    Typography, Box, TextField, Button, Paper, InputAdornment, CircularProgress,
+    Card, CardMedia, CardContent, CardActions
+} from '@mui/material';
+import { GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
+
 import { Search as SearchIcon, LocationOn as LocationOnIcon } from '@mui/icons-material';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 
@@ -11,28 +17,41 @@ import { Business, Category } from '../types';
 import { API_BASE_URL } from '../services/api';
 import { ExtendedPage } from '../App';
 
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.15 },
-  },
-};
-const itemVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1, transition: { type: 'spring', stiffness: 100 } },
-};
-
-interface HomePageProps {
-    navigateTo: (page: ExtendedPage, businessId?: string) => void;
+// --- Interfaces para el estado del mapa ---
+interface BusinessLocation {
+    lat: number;
+    lng: number;
+    business: Business;
 }
 
-export const HomePage: React.FC<HomePageProps> = ({ navigateTo }) => {
+// --- Estilos para el mapa ---
+const mapContainerStyle = {
+  width: '100%',
+  height: '500px',
+  borderRadius: '16px'
+};
+
+const costaRicaCenter = {
+  lat: 9.934739,
+  lng: -84.087502
+};
+
+// --- Animaciones (sin cambios) ---
+const containerVariants: Variants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } };
+const itemVariants: Variants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } };
+
+// --- Componente Principal ---
+export const HomePage: React.FC<{ navigateTo: (page: ExtendedPage, businessId?: string) => void; }> = ({ navigateTo }) => {
     const [businesses, setBusinesses] = useState<Business[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    
+    // --- Nuevos estados para el mapa ---
+    const [locations, setLocations] = useState<BusinessLocation[]>([]);
+    const [selectedLocation, setSelectedLocation] = useState<BusinessLocation | null>(null);
+    const [isMapLoading, setIsMapLoading] = useState(true);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -60,6 +79,35 @@ export const HomePage: React.FC<HomePageProps> = ({ navigateTo }) => {
         fetchInitialData();
     }, []);
 
+    // --- Efecto para Geocodificar las direcciones ---
+    useEffect(() => {
+        if (businesses.length > 0 && window.google) {
+            setIsMapLoading(true);
+            const geocoder = new window.google.maps.Geocoder();
+            const geocodePromises = businesses.map(business => 
+                new Promise<BusinessLocation | null>((resolve) => {
+                    geocoder.geocode({ address: business.address }, (results, status) => {
+                        if (status === 'OK' && results?.[0]) {
+                            resolve({
+                                lat: results[0].geometry.location.lat(),
+                                lng: results[0].geometry.location.lng(),
+                                business: business
+                            });
+                        } else {
+                            console.warn(`Geocoding fallido para "${business.address}": ${status}`);
+                            resolve(null);
+                        }
+                    });
+                })
+            );
+            
+            Promise.all(geocodePromises).then(results => {
+                setLocations(results.filter((r): r is BusinessLocation => r !== null));
+                setIsMapLoading(false);
+            });
+        }
+    }, [businesses]);
+
     const handleSelectCategory = (categoryName: string) => {
         setSelectedCategory(prev => (prev === categoryName ? null : categoryName));
     };
@@ -82,7 +130,7 @@ export const HomePage: React.FC<HomePageProps> = ({ navigateTo }) => {
                         </Typography>
                     </Box>
                 </motion.div>
-
+                
                 {/* Search Bar */}
                 <motion.div variants={itemVariants}>
                     <Paper elevation={3} sx={{ p: 1, display: 'flex', alignItems: 'center', maxWidth: '800px', mx: 'auto', borderRadius: '50px', mb: { xs: 6, md: 10 }, bgcolor: 'background.paper', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
@@ -91,14 +139,68 @@ export const HomePage: React.FC<HomePageProps> = ({ navigateTo }) => {
                         <Button variant="contained" size="large" sx={{ px: 4, py: 1.5 }}>Buscar</Button>
                     </Paper>
                 </motion.div>
+                
+                {/* --- NUEVA SECCIÓN DEL MAPA --- */}
+                <motion.div variants={itemVariants}>
+                    <Box sx={{ my: 6 }}>
+                        <Typography variant="h4" component="h2" sx={{ fontWeight: '600', mb: 3, color: 'text.primary' }}>
+                            Explora en el Mapa
+                        </Typography>
+                        {isLoading || isMapLoading ? <Box sx={{display: 'flex', justifyContent: 'center', my: 4}}><CircularProgress /></Box> : (
+                            <Paper elevation={3} sx={{ borderRadius: 4, overflow: 'hidden' }}>
+                                <GoogleMap
+                                    mapContainerStyle={mapContainerStyle}
+                                    center={costaRicaCenter}
+                                    zoom={7.5}
+                                >
+                                    {locations.map((loc) => (
+                                        <Marker 
+                                            key={loc.business.id} 
+                                            position={{ lat: loc.lat, lng: loc.lng }}
+                                            onClick={() => setSelectedLocation(loc)}
+                                        />
+                                    ))}
+
+                                    {selectedLocation && (
+                                        <InfoWindow
+                                            position={{ lat: selectedLocation.lat, lng: selectedLocation.lng }}
+                                            onCloseClick={() => setSelectedLocation(null)}
+                                        >
+                                            <Card elevation={0} sx={{ maxWidth: 250, border: 'none' }}>
+                                                <CardMedia
+                                                    component="img"
+                                                    height="100"
+                                                    image={selectedLocation.business.logo_url || 'https://placehold.co/250x100?text=Negocio'}
+                                                    alt={selectedLocation.business.name}
+                                                />
+                                                <CardContent sx={{ p: 1 }}>
+                                                    <Typography gutterBottom variant="h6" component="div" sx={{ mb: 0, fontWeight: 'bold' }}>
+                                                        {selectedLocation.business.name}
+                                                    </Typography>
+                                                    <Typography variant="body2" color="text.secondary" noWrap>
+                                                        {selectedLocation.business.address}
+                                                    </Typography>
+                                                </CardContent>
+                                                <CardActions sx={{ p: 1, pt: 0 }}>
+                                                    <Button size="small" variant="contained" fullWidth onClick={() => navigateTo('businessDetails', selectedLocation.business.id)}>
+                                                        Ver Detalles
+                                                    </Button>
+                                                </CardActions>
+                                            </Card>
+                                        </InfoWindow>
+                                    )}
+                                </GoogleMap>
+                            </Paper>
+                        )}
+                    </Box>
+                </motion.div>
 
                 {/* Categories Section */}
                 <motion.div variants={itemVariants}>
                     <Box sx={{ mb: 8 }}>
-                        <Typography variant="h4" component="h2" gutterBottom color="text.primary" sx={{ fontWeight: '600', mb: 3 }}>
+                         <Typography variant="h4" component="h2" gutterBottom color="text.primary" sx={{ fontWeight: '600', mb: 3 }}>
                             Explorar por categoría
                         </Typography>
-                        {/* FIX: Replaced Grid with a responsive Box using Flexbox */}
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
                             {categories.map((cat) => (
                                 <Box sx={{ p: 1.5, boxSizing: 'border-box', width: { xs: '50%', sm: '33.33%', md: '25%', lg: '20%' } }} key={cat.id || cat._id}>
@@ -112,7 +214,7 @@ export const HomePage: React.FC<HomePageProps> = ({ navigateTo }) => {
                         </Box>
                     </Box>
                 </motion.div>
-
+                
                 {/* Listings Section */}
                 <motion.div variants={itemVariants}>
                     <Box sx={{ mb: 8 }}>
@@ -131,7 +233,6 @@ export const HomePage: React.FC<HomePageProps> = ({ navigateTo }) => {
                                 )}
                             </Box>
                         )}
-                        {/* FIX: Replaced Grid with a responsive Box using Flexbox */}
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
                             <AnimatePresence>
                                 {filteredBusinesses.map((business) => (
