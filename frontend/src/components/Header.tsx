@@ -1,21 +1,40 @@
 // src/components/Header.tsx
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { ExtendedPage } from '@/App';
-import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
-import ColorModeSelect from '../themes/ColorModeSelect'; // Importamos el selector de tema
+
+// --- MUI Component Imports ---
+import { AppBar, Toolbar, Typography, Button, Box, Avatar, Menu, MenuItem, IconButton, Divider } from '@mui/material'; // FIX: Se añade 'Divider'
+import ColorModeSelect from '@/themes/ColorModeSelect';
+
 
 interface HeaderProps {
     navigateTo: (page: ExtendedPage) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
-    const { token, logout, user } = useAuth();
+    const { token, logout, user } = useAuth(); 
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
+
+    const handleMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleClose = () => {
+        setAnchorEl(null);
+    };
 
     const handleLogout = () => {
+        handleClose();
         logout();
         navigateTo('home');
+    };
+
+    const handleNavigate = (page: ExtendedPage) => {
+        handleClose();
+        navigateTo(page);
     };
 
     return (
@@ -32,15 +51,29 @@ export const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     {token && user ? (
                         <>
-                            <Button color="inherit" onClick={() => navigateTo('profile')}>Mi Perfil</Button>
-                            {user.role === 'dueño' && (
-                                <Button color="inherit" onClick={() => navigateTo('ownerDashboard')}>Mi Negocio</Button>
-                            )}
-                            {user.role === 'admin' && (
-                                <Button color="inherit" onClick={() => navigateTo('admin')}>Panel Admin</Button>
-                            )}
-                            <Button color="inherit" onClick={() => navigateTo('appointments')}>Mis Citas</Button>
-                            <Button color="inherit" onClick={handleLogout}>Cerrar Sesión</Button>
+                            {/* Menú de Avatar */}
+                            <IconButton onClick={handleMenu} size="small">
+                                <Avatar sx={{ width: 32, height: 32 }} src={user.profile_picture_url} />
+                            </IconButton>
+                            <Menu
+                                anchorEl={anchorEl}
+                                open={open}
+                                onClose={handleClose}
+                                onClick={handleClose}
+                                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                            >
+                                <MenuItem onClick={() => handleNavigate('profile')}>Mi Perfil</MenuItem>
+                                <MenuItem onClick={() => handleNavigate('appointments')}>Mis Citas</MenuItem>
+                                {user.role === 'dueño' && (
+                                    <MenuItem onClick={() => handleNavigate('ownerDashboard')}>Mi Negocio</MenuItem>
+                                )}
+                                {user.role === 'admin' && (
+                                    <MenuItem onClick={() => handleNavigate('admin')}>Panel Admin</MenuItem>
+                                )}
+                                <Divider />
+                                <MenuItem onClick={handleLogout}>Cerrar Sesión</MenuItem>
+                            </Menu>
                         </>
                     ) : (
                         <>

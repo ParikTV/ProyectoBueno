@@ -1,14 +1,15 @@
 // src/pages/LoginPage.tsx
 
 import React, { useState } from 'react';
-import { Box, Button, Checkbox, CssBaseline, Divider, FormControlLabel, FormLabel, FormControl, Link, TextField, Typography, Stack, Card } from '@mui/material';
+import { Box, Button, Checkbox, CssBaseline, Divider, FormControlLabel, FormLabel, FormControl, Link, TextField, Typography, Stack, Card, Alert } from '@mui/material'; // FIX: Se añade 'Alert' a la importación
 import { styled } from '@mui/material/styles';
+import { useGoogleLogin } from '@react-oauth/google';
 
 import { useAuth } from '@/hooks/useAuth';
 import { Page } from '@/types';
 import { API_BASE_URL } from '@/services/api';
-import { GoogleIcon, FacebookIcon } from '@/components/Icons';
-import ForgotPassword from '@/components/ForgotPassword'; // Importamos el nuevo componente
+import { GoogleIcon } from '@/components/Icons';
+import ForgotPassword from '@/components/ForgotPassword';
 
 const SignInContainer = styled(Stack)(({ theme }) => ({
   height: '100%',
@@ -23,19 +24,47 @@ interface LoginPageProps {
 }
 
 export const LoginPage: React.FC<LoginPageProps> = ({ navigateTo }) => {
-    // Tu lógica de estado original
     const { login } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [open, setOpen] = useState(false); // Estado para el diálogo de "Olvidé contraseña"
+    const [open, setOpen] = useState(false);
 
-    // Lógica del diálogo
     const handleClickOpen = () => setOpen(true);
     const handleClose = () => setOpen(false);
 
-    // Tu lógica de envío original
+    const handleBackendLogin = async (token: string, provider: 'google' | 'facebook') => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const response = await fetch(`${API_BASE_URL}/login/${provider}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: token })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || `Error con el inicio de sesión de ${provider}.`);
+            
+            login(data.access_token);
+            navigateTo('home');
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const googleLogin = useGoogleLogin({
+        onSuccess: (tokenResponse) => {
+            handleBackendLogin(tokenResponse.access_token, 'google');
+        },
+        onError: () => {
+            setError('El inicio de sesión con Google falló.');
+        }
+    });
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setError(null);
@@ -71,33 +100,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ navigateTo }) => {
                     <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
                         <FormControl>
                             <FormLabel htmlFor="email">Correo Electrónico</FormLabel>
-                            <TextField
-                                id="email"
-                                type="email"
-                                name="email"
-                                placeholder="tu@email.com"
-                                autoComplete="email"
-                                required
-                                fullWidth
-                                variant="outlined"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
+                            <TextField id="email" type="email" name="email" placeholder="tu@email.com" autoComplete="email" required fullWidth variant="outlined" value={email} onChange={(e) => setEmail(e.target.value)} />
                         </FormControl>
                         <FormControl>
                             <FormLabel htmlFor="password">Contraseña</FormLabel>
-                            <TextField
-                                name="password"
-                                placeholder="••••••"
-                                type="password"
-                                id="password"
-                                autoComplete="current-password"
-                                required
-                                fullWidth
-                                variant="outlined"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
+                            <TextField name="password" placeholder="••••••" type="password" id="password" autoComplete="current-password" required fullWidth variant="outlined" value={password} onChange={(e) => setPassword(e.target.value)} />
                         </FormControl>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <FormControlLabel control={<Checkbox value="remember" color="primary" />} label="Recordarme" />
@@ -106,18 +113,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ navigateTo }) => {
                             </Link>
                         </Box>
                         <ForgotPassword open={open} handleClose={handleClose} />
-                        {error && <Typography color="error" sx={{ textAlign: 'center' }}>{error}</Typography>}
+                        {error && <Alert severity="error">{error}</Alert>}
                         <Button type="submit" fullWidth variant="contained" disabled={isLoading}>
                             {isLoading ? 'Iniciando...' : 'Iniciar Sesión'}
                         </Button>
                     </Box>
                     <Divider sx={{ my: 2 }}>o</Divider>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        <Button fullWidth variant="outlined" startIcon={<GoogleIcon />}>
+                        <Button fullWidth variant="outlined" onClick={() => googleLogin()} startIcon={<GoogleIcon />}>
                             Continuar con Google
-                        </Button>
-                        <Button fullWidth variant="outlined" startIcon={<FacebookIcon />}>
-                            Continuar con Facebook
                         </Button>
                         <Typography sx={{ textAlign: 'center', mt: 1 }}>
                             ¿No tienes una cuenta?{' '}

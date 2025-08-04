@@ -1,3 +1,4 @@
+# backend/app/crud/crud_user.py
 
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
@@ -8,6 +9,9 @@ from app.core.security import get_password_hash
 from app.schemas.user import UserCreate, UserUpdate, OwnerRequestSchema
 from app.schemas.business import BusinessCreate
 from app.crud import crud_business
+
+# URL de una imagen de avatar por defecto
+DEFAULT_AVATAR_URL = "https://i.imgur.com/6b6psnA.png"
 
 async def get_user_by_email(db: AsyncIOMotorDatabase, email: str):
     return await db.users.find_one({"email": email})
@@ -25,6 +29,7 @@ async def create_user(db: AsyncIOMotorDatabase, user: UserCreate):
     
     user_data["role"] = "usuario"
     user_data["created_at"] = datetime.utcnow()
+    user_data["profile_picture_url"] = DEFAULT_AVATAR_URL # <-- FOTO POR DEFECTO
     
     result = await db.users.insert_one(user_data)
     created_user = await db.users.find_one({"_id": result.inserted_id})
@@ -48,6 +53,7 @@ async def get_pending_owner_requests(db: AsyncIOMotorDatabase):
     return await cursor.to_list(length=100)
     
 async def approve_owner_request(db: AsyncIOMotorDatabase, user_id: str):
+    # ... (esta función no cambia)
     user = await get_user_by_id(db, user_id)
     if not user or not user.get("owner_request"):
         return None
@@ -83,3 +89,29 @@ async def get_all_owners(db: AsyncIOMotorDatabase):
 async def get_pending_category_requests(db: AsyncIOMotorDatabase):
     cursor = db.category_requests.find({"status": "pending"})
     return await cursor.to_list(length=100)
+
+async def get_or_create_social_user(db: AsyncIOMotorDatabase, user_info: dict):
+    user = await db.users.find_one({"email": user_info["email"]})
+    if user:
+        # Si el usuario ya existe pero no tiene foto, la actualizamos
+        if not user.get("profile_picture_url"):
+            await db.users.update_one(
+                {"_id": user["_id"]},
+                {"$set": {"profile_picture_url": user_info.get("picture", DEFAULT_AVATAR_URL)}}
+            )
+            # Recargamos los datos del usuario para devolver la versión actualizada
+            user = await db.users.find_one({"email": user_info["email"]})
+        return user
+
+    # Si el usuario no existe, lo creamos con la foto
+    new_user_data = {
+        "email": user_info["email"],
+        "full_name": user_info.get("name"),
+        "profile_picture_url": user_info.get("picture", DEFAULT_AVATAR_URL), # <-- GUARDA LA FOTO DE GOOGLE
+        "role": "usuario",
+        "created_at": datetime.utcnow(),
+        "hashed_password": "",
+    }
+    result = await db.users.insert_one(new_user_data)
+    created_user = await db.users.find_one({"_id": result.inserted_id})
+    return created_user

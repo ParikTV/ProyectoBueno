@@ -56,6 +56,8 @@ export interface UserResponse {
     created_at: string;
     role: 'usuario' | 'dueño' | 'admin';
     owner_request?: OwnerRequest;
+    profile_picture_url?: string; // <-- NUEVA LÍNEA
+
 }
 
 export interface Business {
