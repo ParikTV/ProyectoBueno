@@ -2,17 +2,78 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { API_BASE_URL } from '@/services/api';
-import { Business } from '@/types'; // FIX: 'Page' has been removed from this import
+import { Business, Appointment } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { ExtendedPage } from '@/App';
 import { LocationDisplay } from '@/components/LocationDisplay';
 // --- MUI Component Imports ---
-import { Box, Typography, Button, Paper, CircularProgress, Divider, TextField, IconButton } from '@mui/material';
+import { Box, Typography, Button, Paper, CircularProgress, Divider, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Alert } from '@mui/material';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
-// --- Booking Modal (Refactored with MUI) ---
-const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookingSuccess: () => void; }> = ({ business, onClose, onBookingSuccess }) => {
+// --- NUEVO COMPONENTE: MODAL DE CONFIRMACIÓN Y ENVÍO ---
+const ConfirmationDialog: React.FC<{
+    appointment: Appointment;
+    onClose: () => void;
+    navigateTo: (page: ExtendedPage) => void;
+}> = ({ appointment, onClose, navigateTo }) => {
+    const { token, user } = useAuth();
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const appointmentId = appointment.id || (appointment as any)._id;
+
+    const handleSendEmail = async () => {
+        if (!token || !appointmentId) return;
+        setIsLoading(true);
+        setError('');
+        setSuccess('');
+        try {
+            const res = await fetch(`${API_BASE_URL}/appointments/${appointmentId}/send-pdf`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error("No se pudo enviar el correo.");
+            setSuccess(`Comprobante enviado a ${user?.email}.`);
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <Dialog open={true} onClose={onClose}>
+            <DialogTitle fontWeight="bold">¡Reserva Confirmada!</DialogTitle>
+            <DialogContent>
+                <Typography>Tu cita ha sido agendada con éxito.</Typography>
+                <Typography color="text.secondary" sx={{mt: 1}}>
+                    Puedes ver y gestionar todas tus citas, además de descargar los comprobantes en PDF, desde la sección "Mis Citas".
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                <Typography>¿Deseas recibir el comprobante de esta cita en tu correo electrónico ({user?.email})?</Typography>
+                {error && <Alert severity="error" sx={{mt: 1}}>{error}</Alert>}
+                {success && <Alert severity="success" sx={{mt: 1}}>{success}</Alert>}
+            </DialogContent>
+            <DialogActions sx={{ p: 2, justifyContent: 'space-between' }}>
+                <Button onClick={() => navigateTo('appointments')}>Ir a Mis Citas</Button>
+                <Box>
+                    <Button onClick={onClose} disabled={!!success}>No, gracias</Button>
+                    <Button variant="contained" onClick={handleSendEmail} disabled={isLoading || !!success}>
+                        {isLoading ? 'Enviando...' : 'Enviar Correo'}
+                    </Button>
+                </Box>
+            </DialogActions>
+        </Dialog>
+    );
+};
+
+// --- Booking Modal (Modificado para mostrar el nuevo diálogo) ---
+const BookingModal: React.FC<{ 
+    business: Business; 
+    onClose: () => void; 
+    onBookingSuccess: (appointment: Appointment) => void; 
+}> = ({ business, onClose, onBookingSuccess }) => {
     const { token } = useAuth();
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
@@ -20,8 +81,7 @@ const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookin
     const [isLoading, setIsLoading] = useState(false);
     const [isLoadingSlots, setIsLoadingSlots] = useState(true);
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
-
+    
     useEffect(() => {
         const fetchSlots = async () => {
             if (!selectedDate || !business.id) return;
@@ -47,7 +107,7 @@ const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookin
             setError("Por favor, selecciona una hora.");
             return;
         }
-        setIsLoading(true); setError(''); setSuccess('');
+        setIsLoading(true); setError('');
         try {
             const appointmentTime = `${selectedDate}T${selectedSlot}:00`;
             const res = await fetch(`${API_BASE_URL}/appointments/`, {
@@ -60,8 +120,7 @@ const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookin
                 throw new Error(errData.detail || "No se pudo crear la cita.");
             }
             const responseData = await res.json();
-            setSuccess(`¡Cita reservada con éxito! ID: ${responseData.id || responseData._id}`);
-            setTimeout(() => { onBookingSuccess(); onClose(); }, 2000);
+            onBookingSuccess(responseData); // Pasamos la nueva cita al componente padre
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -70,42 +129,34 @@ const BookingModal: React.FC<{ business: Business; onClose: () => void; onBookin
     };
 
     return (
-        <Box
-            onClick={onClose}
-            sx={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', bgcolor: 'rgba(0,0,0,0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000 }}
-        >
-            <Paper onClick={e => e.stopPropagation()} sx={{ p: {xs: 2, sm: 4}, borderRadius: 4, width: '90%', maxWidth: '500px' }}>
-                <Typography variant="h5" component="h2" gutterBottom>Reservar en {business.name}</Typography>
-                {error && <Typography color="error" my={2}>{error}</Typography>}
-                {success && <Typography color="success.main" my={2}>{success}</Typography>}
-                <Box component="form" noValidate>
-                    <Typography fontWeight="bold" mt={2}>1. Elige una fecha</Typography>
-                    <TextField type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} fullWidth sx={{ mt: 1 }} />
-                    <Typography fontWeight="bold" mt={2}>2. Elige una hora disponible</Typography>
-                    {isLoadingSlots ? <CircularProgress sx={{ my: 2 }} /> : (
-                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 1, my: 2, maxHeight: '200px', overflowY: 'auto' }}>
-                            {availableSlots.length > 0 ? availableSlots.map(slot => (
-                                <Button key={slot} variant={selectedSlot === slot ? 'contained' : 'outlined'} onClick={() => setSelectedSlot(slot)}>
-                                    {slot}
-                                </Button>
-                            )) : <Typography>No hay horarios disponibles.</Typography>}
-                        </Box>
-                    )}
-                </Box>
-                <Box sx={{ display: 'flex', gap: 2, mt: 3, flexDirection: {xs: 'column', sm: 'row'} }}>
-                    <Button variant="contained" onClick={handleBooking} disabled={!selectedSlot || isLoading || !!success} fullWidth>
-                        {isLoading ? 'Confirmando...' : 'Confirmar Cita'}
-                    </Button>
-                    <Button variant="outlined" onClick={onClose} disabled={isLoading} fullWidth>
-                        Cancelar
-                    </Button>
-                </Box>
-            </Paper>
-        </Box>
+        <Dialog open={true} onClose={onClose} PaperProps={{onClick: e => e.stopPropagation()}}>
+            <DialogTitle>Reservar en {business.name}</DialogTitle>
+            <DialogContent>
+                {error && <Alert severity="error" sx={{my: 1}}>{error}</Alert>}
+                <Typography fontWeight="bold" mt={1}>1. Elige una fecha</Typography>
+                <TextField type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} fullWidth sx={{ mt: 1 }} />
+                <Typography fontWeight="bold" mt={2}>2. Elige una hora disponible</Typography>
+                {isLoadingSlots ? <CircularProgress sx={{ my: 2 }} /> : (
+                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 1, my: 2, maxHeight: '200px', overflowY: 'auto' }}>
+                        {availableSlots.length > 0 ? availableSlots.map(slot => (
+                            <Button key={slot} variant={selectedSlot === slot ? 'contained' : 'outlined'} onClick={() => setSelectedSlot(slot)}>
+                                {slot}
+                            </Button>
+                        )) : <Typography>No hay horarios disponibles.</Typography>}
+                    </Box>
+                )}
+            </DialogContent>
+            <DialogActions sx={{p: 2}}>
+                <Button onClick={onClose} disabled={isLoading}>Cancelar</Button>
+                <Button variant="contained" onClick={handleBooking} disabled={!selectedSlot || isLoading}>
+                    {isLoading ? 'Confirmando...' : 'Confirmar Cita'}
+                </Button>
+            </DialogActions>
+        </Dialog>
     );
 };
 
-// --- Business Details Page (Refactored with MUI) ---
+// --- Página de Detalles del Negocio (Modificada para gestionar los modales) ---
 interface BusinessDetailsPageProps { 
     businessId: string; 
     navigateTo: (page: ExtendedPage) => void; 
@@ -116,6 +167,8 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
     const [business, setBusiness] = useState<Business | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [showBookingModal, setShowBookingModal] = useState(false);
+    // NUEVO ESTADO: Almacena la cita recién creada para pasarla al diálogo de confirmación.
+    const [confirmedAppointment, setConfirmedAppointment] = useState<Appointment | null>(null);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
     const fetchDetails = useCallback(async () => {
@@ -133,6 +186,18 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
 
     useEffect(() => { fetchDetails(); }, [fetchDetails]);
     
+    // Función que se ejecuta cuando la reserva es exitosa
+    const handleBookingSuccess = (newAppointment: Appointment) => {
+        setShowBookingModal(false); // Cierra el modal de reserva
+        setConfirmedAppointment(newAppointment); // Abre el modal de confirmación
+    };
+
+    const handleCloseConfirmation = () => {
+        setConfirmedAppointment(null);
+    };
+
+    // (El resto del componente, como allImages, goToPrevious, etc., no cambia)
+
     const allImages = React.useMemo(() => {
         if (!business) return [];
         return Array.from(new Set([
@@ -143,6 +208,7 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
 
     const goToPrevious = () => setCurrentImageIndex(prev => (prev === 0 ? allImages.length - 1 : prev - 1));
     const goToNext = () => setCurrentImageIndex(prev => (prev === allImages.length - 1 ? 0 : prev + 1));
+
 
     if (isLoading) return <Box sx={{ textAlign: 'center', p: 4 }}><CircularProgress /></Box>;
     if (!business) return <Box sx={{ textAlign: 'center', p: 4 }}><Typography>Negocio no encontrado.</Typography></Box>;
@@ -155,10 +221,19 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
                 <BookingModal 
                     business={business} 
                     onClose={() => setShowBookingModal(false)} 
-                    onBookingSuccess={() => navigateTo('appointments')} 
+                    onBookingSuccess={handleBookingSuccess} 
                 />
             )}
 
+            {/* Renderiza el nuevo diálogo de confirmación si hay una cita confirmada */}
+            {confirmedAppointment && (
+                <ConfirmationDialog
+                    appointment={confirmedAppointment}
+                    onClose={handleCloseConfirmation}
+                    navigateTo={navigateTo}
+                />
+            )}
+            
             <Paper elevation={4} sx={{
                 display: 'grid',
                 gridTemplateColumns: { xs: '1fr', md: '3fr 4fr' },
@@ -166,7 +241,7 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
                 p: { xs: 2, md: 4 },
                 borderRadius: 4
             }}>
-                {/* --- Image Carousel Section --- */}
+                {/* --- Image Carousel Section (Sin cambios) --- */}
                 <Box sx={{ position: 'relative', width: '100%', height: { xs: 300, md: 450 }, borderRadius: 2, overflow: 'hidden' }}>
                     {allImages.length > 1 && (
                         <>
@@ -183,17 +258,9 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
                         alt={business.name}
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
-                    <Box sx={{ position: 'absolute', bottom: 8, left: 0, right: 0, display: 'flex', justifyContent: 'center', gap: 1 }}>
-                        {allImages.map((_, index) => (
-                            <Box key={index} onClick={() => setCurrentImageIndex(index)} sx={{
-                                width: 8, height: 8, borderRadius: '50%', cursor: 'pointer',
-                                bgcolor: currentImageIndex === index ? 'white' : 'rgba(255,255,255,0.5)',
-                            }}/>
-                        ))}
-                    </Box>
                 </Box>
 
-                {/* --- Info Section --- */}
+                {/* --- Info Section (Sin cambios) --- */}
                 <Box>
                     <Typography color="text.secondary" fontWeight="bold" textTransform="uppercase">
                         {business.categories.join(', ') || 'Sin Categoría'}

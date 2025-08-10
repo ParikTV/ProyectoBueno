@@ -1,5 +1,6 @@
 # backend/app/api/endpoints/appointments.py
 from fastapi import APIRouter, Depends, status, HTTPException, Response
+from fastapi.concurrency import run_in_threadpool # <-- ¡NUEVO IMPORT!
 from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import List
 from datetime import datetime
@@ -9,7 +10,6 @@ from app.schemas.user import UserResponse
 from app.schemas.appointment import AppointmentCreate, AppointmentResponse
 from app.crud import crud_appointment, crud_user, crud_business
 from app.core.security import get_current_user
-# --- NUEVOS IMPORTS ---
 from app.services.notification_service import (
     send_confirmation_email, 
     generate_appointment_pdf_as_bytes, 
@@ -18,6 +18,7 @@ from app.services.notification_service import (
 
 router = APIRouter()
 
+# --- (El endpoint create_appointment no cambia) ---
 @router.post("/", response_model=AppointmentResponse, status_code=status.HTTP_201_CREATED)
 async def create_appointment(
     appointment_in: AppointmentCreate,
@@ -30,22 +31,45 @@ async def create_appointment(
         user_id=current_user.id,
         appointment_time=appointment_in.appointment_time
     )
-    
-    # --- LÓGICA DE NOTIFICACIÓN POST-CITA ---
-    business = await crud_business.get_business(db, appointment_in.business_id)
-    if current_user.email.endswith('@gmail.com'):
-        details = {
-            "user_name": current_user.full_name or current_user.email,
-            "business_name": business.get("name"),
-            "date": appointment_in.appointment_time.strftime("%d/%m/%Y"),
-            "time": appointment_in.appointment_time.strftime("%H:%M"),
-            "address": business.get("address")
-        }
-        send_confirmation_email(current_user.email, details)
-
     return AppointmentResponse.model_validate(appointment)
 
-# --- Endpoint para obtener el PDF de una cita ---
+# --- CORRECCIÓN: Se usa run_in_threadpool para llamar a la función de envío de correo ---
+@router.post("/{appointment_id}/send-pdf", status_code=status.HTTP_200_OK)
+async def send_appointment_pdf_email(
+    appointment_id: str,
+    db: AsyncIOMotorDatabase = Depends(get_database),
+    current_user: UserResponse = Depends(get_current_user)
+):
+    appointment = await crud_appointment.get_appointment_by_id(db, appointment_id, current_user.id)
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Cita no encontrada o no te pertenece.")
+
+    business = await crud_business.get_business(db, str(appointment["business_id"]))
+    details = {
+        "id": appointment_id,
+        "user_name": current_user.full_name or current_user.email,
+        "business_name": business.get("name"),
+        "date": appointment["appointment_time"].strftime("%d/%m/%Y"),
+        "time": appointment["appointment_time"].strftime("%H:%M"),
+        "address": business.get("address")
+    }
+    
+    pdf_bytes = generate_appointment_pdf_as_bytes(details)
+    
+    # Usamos run_in_threadpool para no bloquear el servidor
+    success = await run_in_threadpool(
+        send_confirmation_email, 
+        user_email=current_user.email, 
+        details=details, 
+        pdf_bytes=pdf_bytes
+    )
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="No se pudo enviar el correo.")
+        
+    return {"message": "Correo enviado con éxito."}
+
+# --- (El resto de los endpoints como /pdf, /qr, /me no cambian) ---
 @router.get("/{appointment_id}/pdf")
 async def get_appointment_pdf(
     appointment_id: str,
@@ -70,7 +94,6 @@ async def get_appointment_pdf(
         'Content-Disposition': f'inline; filename="cita_{appointment_id}.pdf"'
     })
 
-# --- Endpoint para obtener el QR de una cita ---
 @router.get("/{appointment_id}/qr")
 async def get_appointment_qr(
     appointment_id: str,

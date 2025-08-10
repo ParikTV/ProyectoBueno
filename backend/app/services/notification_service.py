@@ -4,8 +4,11 @@ import qrcode
 from fpdf import FPDF
 from io import BytesIO
 from typing import Dict, Any
+import emails 
+from emails.template import JinjaTemplate
+from app.core.config import settings
 
-# --- Generación de Código QR (sin cambios) ---
+# --- (Las funciones generate_qr_code_as_bytes, PDF, y generate_appointment_pdf_as_bytes no cambian) ---
 def generate_qr_code_as_bytes(appointment_id: str) -> BytesIO:
     """Genera un código QR que apunta a una URL de verificación y lo devuelve como bytes."""
     verification_url = f"http://localhost:5173/verify-appointment/{appointment_id}"
@@ -26,11 +29,9 @@ def generate_qr_code_as_bytes(appointment_id: str) -> BytesIO:
     buffer.seek(0)
     return buffer
 
-# --- Generación de PDF (Corregida) ---
 class PDF(FPDF):
     def header(self):
         self.set_font('Arial', 'B', 15)
-        # Usamos .encode() para manejar caracteres especiales y lo decodificamos a 'latin-1'
         title = 'Confirmación de Cita - ServiBook'.encode('latin-1', 'replace').decode('latin-1')
         self.cell(0, 10, title, 0, 1, 'C')
         self.ln(10)
@@ -47,7 +48,6 @@ def generate_appointment_pdf_as_bytes(details: Dict[str, Any]) -> bytes:
     pdf.add_page()
     pdf.set_font('Arial', '', 12)
     
-    # Codificamos cada texto individualmente para asegurar compatibilidad con FPDF
     user_name = details.get('user_name', 'Cliente').encode('latin-1', 'replace').decode('latin-1')
     business_name = details.get('business_name', 'N/A').encode('latin-1', 'replace').decode('latin-1')
     address = details.get('address', 'N/A').encode('latin-1', 'replace').decode('latin-1')
@@ -77,19 +77,48 @@ def generate_appointment_pdf_as_bytes(details: Dict[str, Any]) -> bytes:
     pdf.set_font('Arial', 'I', 10)
     pdf.multi_cell(0, 10, footer_text)
 
-    # FIX: Convertimos la salida a 'bytes' para que FastAPI la maneje correctamente.
     return bytes(pdf.output())
 
-# --- Servicio de Email (Placeholder) ---
-def send_confirmation_email(user_email: str, details: Dict[str, Any]):
+# --- CORRECCIÓN FINAL ---
+def send_confirmation_email(user_email: str, details: Dict[str, Any], pdf_bytes: bytes):
     """
-    Envía un correo de confirmación (Simulación).
+    Envía un correo de confirmación con el PDF adjunto (de forma síncrona).
     """
-    print("--- SIMULANDO ENVÍO DE CORREO ---")
-    print(f"PARA: {user_email}")
-    print("ASUNTO: ¡Tu cita en ServiBook está confirmada!")
-    print("\n--- CUERPO DEL CORREO ---")
-    print(f"Hola, {details.get('user_name', 'Cliente')}!")
-    print(f"Tu cita para {details.get('business_name')} el día {details.get('date')} a las {details.get('time')} ha sido confirmada.")
-    print("------------------------------")
-    pass
+    message = emails.Message(
+        subject=JinjaTemplate("Confirmación de tu cita en {{business_name}}"),
+        html=JinjaTemplate("""
+            <h1>¡Hola, {{user_name}}!</h1>
+            <p>Tu cita en <strong>{{business_name}}</strong> para el día <strong>{{date}}</strong> a las <strong>{{time}}</strong> ha sido confirmada.</p>
+            <p>Adjuntamos tu comprobante en formato PDF.</p>
+            <p>¡Gracias por usar ServiBook!</p>
+        """),
+        mail_from=('ServiBook', settings.MAIL_USERNAME)
+    )
+
+    # Añadimos el adjunto al objeto del mensaje ANTES de enviarlo
+    message.attach(
+        filename=f'comprobante_cita_{details.get("id", "0")}.pdf',
+        data=pdf_bytes
+    )
+
+    smtp_config = {
+        "host": settings.MAIL_SERVER,
+        "port": settings.MAIL_PORT,
+        "user": settings.MAIL_USERNAME,
+        "password": settings.MAIL_PASSWORD,
+        "tls": True
+    }
+
+    # Ahora la función send no necesita el argumento 'attachments'
+    response = message.send(
+        to=user_email,
+        render=details,
+        smtp=smtp_config
+    )
+    
+    if response.status_code not in [250, '250']:
+        print(f"Error al enviar email: {response.status_code}")
+        return False
+    
+    print(f"Correo de confirmación enviado a {user_email}")
+    return True
