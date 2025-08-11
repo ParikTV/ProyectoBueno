@@ -1,86 +1,70 @@
-// src/types.tsx
+export type ScheduleDay = {
+  is_active: boolean;
+  open_time: string;
+  close_time: string;
+  slot_duration_minutes: number;
+  capacity_per_slot: number;
+};
 
-export type Page = 'home' | 'register' | 'login' | 'profile' | 'appointments' | 'admin' | 'ownerAppointments';
-
-// --- NUEVAS INTERFACES PARA EL HORARIO ---
-export interface ScheduleDay {
-    is_active: boolean;
-    open_time: string;
-    close_time: string;
-    slot_duration_minutes: number;
-    capacity_per_slot: number;
-}
-
-export interface Schedule {
-    monday: ScheduleDay;
-    tuesday: ScheduleDay;
-    wednesday: ScheduleDay;
-    thursday: ScheduleDay;
-    friday: ScheduleDay;
-    saturday: ScheduleDay;
-    sunday: ScheduleDay;
-}
-
-// --- INTERFACES EXISTENTES ---
-export interface Category {
-    id: string;
-    _id?: string;
-    name: string;
-}
-
-export interface Appointment {
-    id: string;
-    business_id: string;
-    user_id: string;
-    appointment_time: string; 
-    status: string;
-    created_at: string;
-}
-
-// --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
-// Añadimos los nuevos campos a la interfaz de la solicitud.
-export interface OwnerRequest {
-    business_name: string;
-    business_description: string;
-    address: string; // <--- CAMPO AÑADIDO
-    logo_url?: string; // <--- CAMPO AÑADIDO (opcional)
-    status: 'pending' | 'approved' | 'rejected';
-}
-
-export interface UserResponse {
-    id: string;
-    _id?: string;
-    email: string;
-    full_name?: string;
-    phone_number?: string;
-    created_at: string;
-    role: 'usuario' | 'dueño' | 'admin';
-    owner_request?: OwnerRequest;
-    profile_picture_url?: string; // <-- NUEVA LÍNEA
-
-}
+export type Schedule = {
+  monday: ScheduleDay; tuesday: ScheduleDay; wednesday: ScheduleDay;
+  thursday: ScheduleDay; friday: ScheduleDay; saturday: ScheduleDay; sunday: ScheduleDay;
+};
 
 export interface Business {
-    id: string;
-    _id?: string;
-    owner_id: string;
-    name: string;
-    description: string;
-    address: string;
-    logo_url?: string;
-    photos: string[];
-    categories: string[];
-    status: 'draft' | 'published';
-    schedule?: Schedule;
+  id?: string;
+  _id?: string;
+  name: string;
+  address: string;
+  description?: string;
+  categories: string[];
+  photos: string[];
+  logo_url?: string;
+  status: 'draft' | 'published' | 'archived';
+  schedule?: any;
+  appointment_mode?: 'generico' | 'por_empleado';
+
+  // NUEVO: para reseñas y ownership
+  owner_id?: string;        // id del dueño (string)
+  rating_avg?: number;      // promedio (0..5)
+  rating_count?: number;    // número de reseñas
 }
 
-export interface CategoryRequest {
-    id: string;
-    _id?: string;
-    owner_id: string;
-    category_name: string;
-    reason: string;
-    evidence_url?: string;
-    status: 'pending' | 'approved' | 'rejected';
-    created_at: string;
+
+export interface Appointment {
+  id?: string; _id?: string;
+  user_id: string;
+  business_id: string;
+  appointment_time: string; // ISO
+  status: 'confirmed' | 'cancelled';
+  employee_id?: string | null;
+}
+
+
+export type Category = { id: string; name: string };
+
+export type Employee = {
+  id: string;
+  business_id: string;
+  name: string;
+  active: boolean;
+  roles?: string[];
+  schedule?: Schedule;
+};
+export interface ReviewReply {
+  author_role: 'owner' | 'admin';
+  content: string;
+  created_at: string; // ISO
+}
+
+export interface Review {
+  id?: string;
+  _id?: string;
+  business_id: string;
+  appointment_id: string;
+  user_id: string;
+  rating: number;          // 1..5
+  comment?: string;
+  created_at: string;      // ISO
+  replies?: ReviewReply[];
 }

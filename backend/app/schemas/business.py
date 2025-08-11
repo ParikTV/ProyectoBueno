@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 
-
 class ScheduleDay(BaseModel):
     is_active: bool = False
     open_time: str = "09:00"
@@ -33,8 +32,9 @@ class BusinessUpdate(BaseModel):
     address: Optional[str] = Field(None, min_length=5)
     photos: Optional[List[str]] = None
     categories: Optional[List[str]] = None
-    # --- ¡ESTA ES LA LÍNEA QUE FALTABA! ---
     logo_url: Optional[str] = None
+    # NUEVO
+    appointment_mode: Optional[str] = None  # "generico" | "por_empleado"
 
 class BusinessResponse(BusinessBase):
     id: str
@@ -43,6 +43,8 @@ class BusinessResponse(BusinessBase):
     categories: List[str]
     status: str
     schedule: Optional[Schedule] = None
+    # NUEVO
+    appointment_mode: Optional[str] = "generico"
 
     class Config:
         from_attributes = True

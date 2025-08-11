@@ -1,6 +1,7 @@
 # backend/app/core/config.py
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
 
 class Settings(BaseSettings):
     API_V1_STR: str = "/api"
@@ -23,8 +24,13 @@ class Settings(BaseSettings):
     MAIL_PORT: int
     MAIL_USERNAME: str
     MAIL_PASSWORD: str
+    MAIL_DEFAULT_SENDER: Optional[str] = None
+    MAIL_FROM_NAME: Optional[str] = None
 
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        extra="ignore",   # <--- clave: evita el ValidationError por variables extra
+    )
 
 settings = Settings()

@@ -1,138 +1,173 @@
 // src/pages/OwnerAppointmentsPage.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { API_BASE_URL } from '@/services/api';
-import { Appointment, UserResponse } from '@/types';
 import {
-    Box,
-    Typography,
-    Paper,
-    CircularProgress,
-    Alert,
-    Stack,
-    Divider,
+  Box,
+  Typography,
+  Paper,
+  CircularProgress,
+  Alert,
+  Stack,
+  Divider,
+  Chip,
 } from '@mui/material';
 
 interface OwnerAppointmentsPageProps {
-    businessId: string;
+  businessId: string;
+}
+
+// Estructura que devuelve el endpoint /with-users
+type ApptWithUser = {
+  id?: string; _id?: string;
+  business_id: string;
+  user_id: string;
+  appointment_time: string; // ISO
+  status: 'confirmed' | 'cancelled';
+  employee_id?: string | null;
+  user?: {
+    id?: string; _id?: string;
+    full_name?: string | null;
+    email?: string | null;
+  } | null;
+};
+
+const getId = (o: { id?: string; _id?: string } | null | undefined) =>
+  (o?.id as string) || (o?._id as string) || '';
+
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
+
+const fmtTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+function visualStatus(a: ApptWithUser): { label: string; color: 'success' | 'warning' | 'default' } {
+  if (a.status === 'cancelled') return { label: 'Cancelada', color: 'default' };
+  const isPast = new Date(a.appointment_time).getTime() < Date.now();
+  if (isPast) return { label: 'Finalizada', color: 'warning' };
+  return { label: 'Confirmada', color: 'success' };
 }
 
 export const OwnerAppointmentsPage: React.FC<OwnerAppointmentsPageProps> = ({ businessId }) => {
-    const { token, logout } = useAuth();
-    const [appointments, setAppointments] = useState<Appointment[]>([]);
-    const [users, setUsers] = useState<Record<string, UserResponse>>({});
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+  const { token } = useAuth();
+  const [items, setItems] = useState<ApptWithUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchAppointmentsAndUsers = async () => {
-            if (!token) {
-                setError("No estás autenticado.");
-                setIsLoading(false);
-                return;
-            }
-            try {
-                // 1. Obtener las citas del negocio
-                const appointmentsResponse = await fetch(`${API_BASE_URL}/appointments/business/${businessId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` },
-                });
+  useEffect(() => {
+    const load = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const r = await fetch(`${API_BASE_URL}/appointments/business/${businessId}/with-users`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+        });
+        if (!r.ok) throw new Error('No se pudieron cargar las reservas del negocio.');
+        const data: ApptWithUser[] = await r.json();
+        setItems(data);
+      } catch (e: any) {
+        setError(e.message || 'Error cargando reservas.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    void load();
+  }, [businessId, token]);
 
-                if (!appointmentsResponse.ok) {
-                    if (appointmentsResponse.status === 401) logout();
-                    throw new Error("No se pudieron cargar las citas de este negocio.");
-                }
-                const appointmentsData: Appointment[] = await appointmentsResponse.json();
-                setAppointments(appointmentsData);
-
-                // 2. Obtener los datos de usuario para cada cita
-                const usersMap: Record<string, UserResponse> = {};
-                // Usamos Promise.all para hacer las peticiones de usuario en paralelo y mejorar el rendimiento
-                const userPromises = appointmentsData.map(app => {
-                    const userId = app.user_id;
-                    if (userId && !usersMap[userId]) {
-                        return fetch(`${API_BASE_URL}/users/${userId}`, {
-                            headers: { 'Authorization': `Bearer ${token}` },
-                        }).then(res => res.ok ? res.json() : null);
-                    }
-                    return Promise.resolve(null);
-                });
-
-                const usersData = await Promise.all(userPromises);
-                usersData.forEach(userData => {
-                    if (userData) {
-                        usersMap[userData.id] = userData;
-                    }
-                });
-                setUsers(usersMap);
-
-            } catch (err: any) {
-                setError(err.message);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchAppointmentsAndUsers();
-    }, [token, logout, businessId]);
-
-    if (isLoading) return <Box sx={{ textAlign: 'center', p: 4 }}><CircularProgress /></Box>;
-    if (error) return <Box sx={{ p: 4 }}><Alert severity="error">{error}</Alert></Box>;
-
+  if (isLoading) {
     return (
-        <Box>
-            <Typography variant="h4" component="h1" fontWeight="600" gutterBottom>
-                Reservas del Negocio
-            </Typography>
-            <Divider sx={{ mb: 4 }} />
-            
-            {appointments.length > 0 ? (
-                <Stack spacing={3}>
-                    {appointments.map(app => {
-                        const user = users[app.user_id];
-                        const appointmentDate = new Date(app.appointment_time);
-                        return (
-                            <Paper 
-                                key={app.id || (app as any)._id} 
-                                elevation={2}
-                                sx={{
-                                    p: { xs: 2, md: 3 },
-                                    display: 'flex',
-                                    flexDirection: { xs: 'column', sm: 'row' },
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    gap: 2,
-                                    borderRadius: 3
-                                }}
-                            >
-                                <Box>
-                                    <Typography variant="h6" fontWeight="600">{user?.full_name || 'Usuario Desconocido'}</Typography>
-                                    <Typography variant="body2" color="text.secondary">{user?.email || 'Email no disponible'}</Typography>
-                                </Box>
-                                <Box sx={{ 
-                                    bgcolor: 'action.hover', 
-                                    p: 2, 
-                                    borderRadius: 2, 
-                                    textAlign: { xs: 'left', sm: 'center' },
-                                    width: { xs: '100%', sm: 'auto' },
-                                    flexShrink: 0
-                                }}>
-                                    <Typography fontWeight="bold">
-                                        {appointmentDate.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                                    </Typography>
-                                    <Typography color="primary" fontWeight="bold">
-                                        {appointmentDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
-                                    </Typography>
-                                </Box>
-                            </Paper>
-                        );
-                    })}
-                </Stack>
-            ) : (
-                <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'action.hover' }}>
-                    <Typography color="text.secondary">Este negocio aún no tiene ninguna cita reservada.</Typography>
-                </Paper>
-            )}
-        </Box>
+      <Box sx={{ textAlign: 'center', p: 4 }}>
+        <CircularProgress />
+      </Box>
     );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
+    );
+  }
+
+  return (
+    <Box>
+      <Typography variant="h4" component="h1" fontWeight={700} gutterBottom>
+        Reservas del Negocio
+      </Typography>
+      <Divider sx={{ mb: 3 }} />
+
+      {items.length > 0 ? (
+        <Stack spacing={2}>
+          {items.map((a) => {
+            const id = getId(a);
+            const name = a.user?.full_name || a.user?.email || 'Usuario sin nombre';
+            const email = a.user?.email || 'Email no disponible';
+            const vs = visualStatus(a);
+
+            return (
+              <Paper
+                key={id}
+                sx={{
+                  p: { xs: 2, md: 3 },
+                  borderRadius: 3,
+                }}
+              >
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  alignItems={{ xs: 'flex-start', sm: 'center' }}
+                  justifyContent="space-between"
+                  gap={2}
+                >
+                  <Box>
+                    <Typography variant="h6" fontWeight={700}>
+                      {name}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {email}
+                    </Typography>
+                    {/* Si quieres mostrar el empleado asignado (si existe), descomenta: */}
+                    {/* {a.employee_id && (
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Empleado asignado: {a.employee_id}
+                      </Typography>
+                    )} */}
+                  </Box>
+
+                  <Box
+                    sx={{
+                      bgcolor: 'action.selected',
+                      px: 2,
+                      py: 1.25,
+                      borderRadius: 2,
+                      textAlign: 'center',
+                      minWidth: 200,
+                    }}
+                  >
+                    <Typography fontWeight={700}>{fmtDate(a.appointment_time)}</Typography>
+                    <Typography color="primary" variant="h6" fontWeight={900}>
+                      {fmtTime(a.appointment_time)}
+                    </Typography>
+                  </Box>
+                </Stack>
+
+                <Divider sx={{ my: 1.5 }} />
+
+                <Chip label={vs.label} color={vs.color} size="small" />
+              </Paper>
+            );
+          })}
+        </Stack>
+      ) : (
+        <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'action.hover' }}>
+          <Typography color="text.secondary">
+            Este negocio aún no tiene ninguna cita reservada.
+          </Typography>
+        </Paper>
+      )}
+    </Box>
+  );
 };
+
+export default OwnerAppointmentsPage;

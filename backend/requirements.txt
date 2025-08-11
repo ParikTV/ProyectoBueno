@@ -17,3 +17,6 @@ fpdf2
 qrcode[pil]
 emails
 Jinja2
+reportlab==3.6.13
+qrcode==7.4.2
+Pillow==10.4.0
