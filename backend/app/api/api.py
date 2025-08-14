@@ -1,4 +1,3 @@
-# app/api/api.py
 from fastapi import APIRouter
 from .endpoints import login, users, businesses, categories, appointments, employees, reviews  # <- añade reviews
 

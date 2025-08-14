@@ -1,11 +1,8 @@
-# --- cargar .env temprano ---
 from pathlib import Path
 try:
     from dotenv import load_dotenv
-    # Carga backend/.env (ajusta la ruta si tu .env está en otra carpeta)
     load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 except Exception:
-    # si dotenv no está instalado o falla, seguimos sin .env
     pass
 
 from fastapi import FastAPI

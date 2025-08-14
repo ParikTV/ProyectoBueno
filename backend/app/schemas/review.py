@@ -1,47 +1,47 @@
-# app/schemas/review.py
-from typing import Any, List, Optional, Literal
+from __future__ import annotations
+from typing import Optional, Any
 from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
-from bson import ObjectId
+from pydantic import BaseModel, Field, ConfigDict, conint
+
 
 class ReviewReply(BaseModel):
-    author_role: Literal["owner", "admin"]
-    author_id: str
-    content: str
-    created_at: datetime
+    text: str
+    role: str = "owner"  # "owner" | "admin"
+    created_at: Optional[datetime] = None
 
-    @field_validator("author_id", mode="before")
-    @classmethod
-    def _oid_to_str(cls, v: Any) -> str:
-        return str(v) if isinstance(v, ObjectId) else v
 
-class ReviewCreate(BaseModel):
-    business_id: str
-    appointment_id: str
-    rating: int = Field(ge=1, le=5)
-    comment: Optional[str] = ""
+class ReviewBase(BaseModel):
+    # Aceptamos str u ObjectId (Any) para evitar problemas al validar
+    business_id: Any
+    appointment_id: Optional[Any] = None
+    rating: conint(ge=1, le=5)  # 1..5
+    comment: str = ""
+
+
+class ReviewCreate(ReviewBase):
+    pass
+
 
 class ReviewUpdate(BaseModel):
-    rating: Optional[int] = Field(default=None, ge=1, le=5)
+    rating: Optional[conint(ge=1, le=5)] = None
     comment: Optional[str] = None
+    reply: Optional[ReviewReply] = None
 
-class ReviewResponse(BaseModel):
-    id: str = Field(..., alias="_id")
-    business_id: str
-    user_id: str
-    rating: int
-    comment: Optional[str] = ""
+
+class ReviewInDB(ReviewBase):
+    id: Any = Field(alias="_id")
+    user_id: Any
     created_at: datetime
-    updated_at: datetime
-    replies: List[ReviewReply] = []
+    # ✅ Hacemos updated_at opcional para no romper con documentos antiguos
+    updated_at: Optional[datetime] = None
+    reply: Optional[ReviewReply] = None
 
-    @field_validator("id", "business_id", "user_id", mode="before")
-    @classmethod
-    def _oid_to_str(cls, v: Any) -> str:
-        return str(v) if isinstance(v, ObjectId) else v
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,  # permite ObjectId
+    )
 
-    class Config:
-        from_attributes = True
-        populate_by_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}
+
+class ReviewResponse(ReviewInDB):
+    """Modelo de salida."""
+    pass

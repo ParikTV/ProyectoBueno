@@ -102,7 +102,6 @@ async def manage_my_business_schedule(
     updated_business = await crud_business.update_business_schedule(db, business_id, schedule_in)
     return convert_business_to_response(updated_business)
 
-# <-- AHORA acepta employee_id opcional
 @router.get("/{business_id}/available-slots", response_model=List[str])
 async def get_available_slots(
     business_id: str,

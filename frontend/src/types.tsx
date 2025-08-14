@@ -24,10 +24,9 @@ export interface Business {
   schedule?: any;
   appointment_mode?: 'generico' | 'por_empleado';
 
-  // NUEVO: para reseñas y ownership
-  owner_id?: string;        // id del dueño (string)
-  rating_avg?: number;      // promedio (0..5)
-  rating_count?: number;    // número de reseñas
+  owner_id?: string;        
+  rating_avg?: number;      
+  rating_count?: number;    
 }
 
 
@@ -35,7 +34,7 @@ export interface Appointment {
   id?: string; _id?: string;
   user_id: string;
   business_id: string;
-  appointment_time: string; // ISO
+  appointment_time: string; 
   status: 'confirmed' | 'cancelled';
   employee_id?: string | null;
 }
@@ -54,7 +53,7 @@ export type Employee = {
 export interface ReviewReply {
   author_role: 'owner' | 'admin';
   content: string;
-  created_at: string; // ISO
+  created_at: string; 
 }
 
 export interface Review {
@@ -63,8 +62,8 @@ export interface Review {
   business_id: string;
   appointment_id: string;
   user_id: string;
-  rating: number;          // 1..5
+  rating: number;          
   comment?: string;
-  created_at: string;      // ISO
+  created_at: string;      
   replies?: ReviewReply[];
 }

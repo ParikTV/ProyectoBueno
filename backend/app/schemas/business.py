@@ -33,8 +33,7 @@ class BusinessUpdate(BaseModel):
     photos: Optional[List[str]] = None
     categories: Optional[List[str]] = None
     logo_url: Optional[str] = None
-    # NUEVO
-    appointment_mode: Optional[str] = None  # "generico" | "por_empleado"
+    appointment_mode: Optional[str] = None  
 
 class BusinessResponse(BusinessBase):
     id: str
@@ -43,7 +42,6 @@ class BusinessResponse(BusinessBase):
     categories: List[str]
     status: str
     schedule: Optional[Schedule] = None
-    # NUEVO
     appointment_mode: Optional[str] = "generico"
 
     class Config:

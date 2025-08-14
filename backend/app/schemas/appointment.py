@@ -3,13 +3,11 @@ from datetime import datetime
 from typing import Any, Optional
 from bson import ObjectId
 
-# ---- Crear cita ----
 class AppointmentCreate(BaseModel):
     business_id: str
     appointment_time: datetime
-    employee_id: Optional[str] = None  # opcional si el negocio es "por empleado"
+    employee_id: Optional[str] = None 
 
-# ---- Respuesta básica de cita ----
 class AppointmentResponse(BaseModel):
     id: str = Field(..., alias="_id")
     user_id: str
@@ -31,7 +29,6 @@ class AppointmentResponse(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
-# ---- Subdocumento de usuario liviano ----
 class UserLite(BaseModel):
     id: str = Field(..., alias="_id")
     email: Optional[str] = None
@@ -50,6 +47,5 @@ class UserLite(BaseModel):
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
-# ---- Respuesta de cita + usuario ----
 class AppointmentWithUserResponse(AppointmentResponse):
     user: Optional[UserLite] = None

@@ -14,9 +14,7 @@ google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
 fpdf2
-qrcode[pil]
+qrcode[pil]==7.4.2
 emails
 Jinja2
-reportlab==3.6.13
-qrcode==7.4.2
-Pillow==10.4.0
+reportlab==4.4.3       

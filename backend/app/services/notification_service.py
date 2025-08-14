@@ -1,4 +1,3 @@
-# backend/app/services/notification_service.py
 import io
 import os
 import qrcode
@@ -13,18 +12,14 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
 
 
-# =========================================================
-# ===============   CONFIGURACIÓN SMTP   ==================
-# =========================================================
+
 
 def _env(name: str, default: Optional[str] = None) -> str:
     """Obtiene variables de entorno con default."""
     v = os.getenv(name)
     return v if v is not None else (default if default is not None else "")
 
-# Soporta dos estilos de nombres:
-# 1) SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASSWORD/...
-# 2) MAIL_SERVER/MAIL_PORT/MAIL_USERNAME/MAIL_PASSWORD/...
+
 SMTP_HOST = _env("SMTP_HOST") or _env("MAIL_SERVER") or "smtp.gmail.com"
 SMTP_PORT = int(_env("SMTP_PORT") or _env("MAIL_PORT") or "587")
 SMTP_USER = _env("SMTP_USER") or _env("MAIL_USERNAME") or ""
@@ -33,7 +28,6 @@ SMTP_PASSWORD = _env("SMTP_PASSWORD") or _env("MAIL_PASSWORD") or ""
 FROM_EMAIL = _env("FROM_EMAIL") or _env("MAIL_DEFAULT_SENDER") or SMTP_USER or "no-reply@example.com"
 FROM_NAME = _env("FROM_NAME") or _env("MAIL_FROM_NAME") or "ServiBook"
 
-# Si el puerto es 465 usamos SSL directo; si es 587 usamos STARTTLS.
 SMTP_USE_SSL = (_env("SMTP_USE_SSL") or "").lower() in ("1", "true", "yes") or (SMTP_PORT == 465)
 SMTP_USE_TLS = (_env("SMTP_USE_TLS") or "").lower() in ("1", "true", "yes") or (SMTP_PORT == 587)
 
@@ -52,7 +46,6 @@ def _smtp_connect() -> smtplib.SMTP:
             server.starttls()
             server.ehlo()
 
-    # Autenticación: si hay user/pass o es gmail, hacemos login.
     must_login = bool(SMTP_USER and SMTP_PASSWORD) or ("gmail" in SMTP_HOST.lower())
     if must_login:
         if not SMTP_USER or not SMTP_PASSWORD:
@@ -107,9 +100,6 @@ def _send_email(
         return False
 
 
-# =========================================================
-# ===============   API DE NOTIFICACIONES   ===============
-# =========================================================
 
 def send_confirmation_email(*, user_email: str, details: Dict[str, Any], pdf_bytes: bytes) -> bool:
     """
@@ -167,9 +157,7 @@ def send_cancellation_email(*, user_email: str, details: Dict[str, Any], pdf_byt
     return _send_email(to=user_email, subject=subject, body_text=body, attachments=attachments)
 
 
-# =========================================================
-# ==================   UTILIDADES QR   ====================
-# =========================================================
+
 
 def generate_qr_code_as_bytes(content: str) -> io.BytesIO:
     """
@@ -186,9 +174,7 @@ def generate_qr_code_as_bytes(content: str) -> io.BytesIO:
     return buf
 
 
-# =========================================================
-# ==============   PDF BONITO CON REPORTLAB   =============
-# =========================================================
+
 
 PRIMARY = colors.HexColor("#1976d2")
 LIGHT_BG = colors.whitesmoke
@@ -205,7 +191,6 @@ def generate_appointment_pdf_as_bytes(details: Dict[str, Any], cancelled: bool =
     w, h = A4
     c = canvas.Canvas(buffer, pagesize=A4)
 
-    # Header
     header_h = 28 * mm
     c.setFillColor(PRIMARY)
     c.rect(0, h - header_h, w, header_h, stroke=0, fill=1)
@@ -215,12 +200,10 @@ def generate_appointment_pdf_as_bytes(details: Dict[str, Any], cancelled: bool =
     c.setFont("Helvetica", 11)
     c.drawRightString(w - 20 * mm, h - 12 * mm, f"ID: {details.get('id','')}")
 
-    # Business
     c.setFillColor(colors.black)
     c.setFont("Helvetica-Bold", 16)
     c.drawString(20 * mm, h - header_h - 10 * mm, details.get("business_name", ""))
 
-    # Info box
     top_box_y = h - header_h - 18 * mm
     box_h = 60 * mm
     c.setFillColor(LIGHT_BG)
@@ -247,7 +230,6 @@ def generate_appointment_pdf_as_bytes(details: Dict[str, Any], cancelled: bool =
         c.drawString(60 * mm, y, str(value))
         y -= 9 * mm
 
-    # QR opcional
     qr_png = details.get("qr_png")
     if qr_png:
         try:
@@ -259,7 +241,6 @@ def generate_appointment_pdf_as_bytes(details: Dict[str, Any], cancelled: bool =
         except Exception:
             pass
 
-    # Marca de agua CANCELADA
     if cancelled or details.get("status") == "cancelled":
         c.saveState()
         c.setFillColor(colors.HexColor("#ff4d4d"))
@@ -269,7 +250,6 @@ def generate_appointment_pdf_as_bytes(details: Dict[str, Any], cancelled: bool =
         c.drawCentredString(0, 0, "CANCELADA")
         c.restoreState()
 
-    # Footer
     c.setFont("Helvetica", 9)
     c.setFillColor(TEXT_MUTED)
     c.drawCentredString(w / 2, 10 * mm, "Gracias por reservar con ServiBook")

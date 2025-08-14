@@ -4,7 +4,7 @@ from bson import ObjectId
 
 class EmployeeScheduleDay(BaseModel):
     is_active: bool = False
-    open_time: str = "09:00"              # "HH:MM"
+    open_time: str = "09:00"            
     close_time: str = "17:00"
     slot_duration_minutes: int = 30
     capacity_per_slot: int = 1

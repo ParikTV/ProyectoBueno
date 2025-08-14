@@ -1,4 +1,3 @@
-# backend/app/api/endpoints/login.py
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -23,7 +22,6 @@ async def login_for_access_token(
     db: AsyncIOMotorDatabase = Depends(get_database),
     form_data: OAuth2PasswordRequestForm = Depends()
 ):
-    # ... (esta función no cambia)
     user = await get_user_by_email(db, email=form_data.username)
     if not user or not verify_password(form_data.password, user['hashed_password']):
         raise HTTPException(
@@ -53,7 +51,7 @@ async def login_google(
         user_info = response.json()
         user_email = user_info.get("email")
         user_name = user_info.get("name")
-        user_picture = user_info.get("picture") # <-- OBTENEMOS LA FOTO
+        user_picture = user_info.get("picture") 
 
         if not user_email:
             raise HTTPException(status_code=400, detail="No se pudo obtener el email de Google.")

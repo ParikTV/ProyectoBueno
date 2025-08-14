@@ -22,7 +22,6 @@ from app.services.notification_service import (
 
 router = APIRouter()
 
-# -------- Crear cita --------
 @router.post("/", response_model=AppointmentResponse, status_code=status.HTTP_201_CREATED)
 async def create_appointment(
     appointment_in: AppointmentCreate,
@@ -39,7 +38,6 @@ async def create_appointment(
     return AppointmentResponse.model_validate(appt)
 
 
-# -------- Enviar PDF por email (confirmación) --------
 @router.post("/{appointment_id}/send-pdf", status_code=status.HTTP_200_OK)
 async def send_appointment_pdf_email(
     appointment_id: str,
@@ -61,7 +59,6 @@ async def send_appointment_pdf_email(
         "status": appointment.get("status", "confirmed"),
     }
 
-    # QR embebido en el PDF
     qr_png = generate_qr_code_as_bytes(appointment_id).getvalue()
     pdf_bytes = generate_appointment_pdf_as_bytes(
         {**details, "qr_png": qr_png},
@@ -79,7 +76,6 @@ async def send_appointment_pdf_email(
     return {"message": "Correo enviado con éxito."}
 
 
-# -------- Descargar PDF --------
 @router.get("/{appointment_id}/pdf")
 async def get_appointment_pdf(
     appointment_id: str,
@@ -114,7 +110,6 @@ async def get_appointment_pdf(
     )
 
 
-# -------- Obtener QR --------
 @router.get("/{appointment_id}/qr")
 async def get_appointment_qr(
     appointment_id: str,
@@ -128,7 +123,6 @@ async def get_appointment_qr(
     return Response(content=qr_buffer.getvalue(), media_type="image/png")
 
 
-# -------- Mis citas --------
 @router.get("/me", response_model=List[AppointmentResponse])
 async def get_my_appointments(
     db: AsyncIOMotorDatabase = Depends(get_database),
@@ -138,14 +132,12 @@ async def get_my_appointments(
     return [AppointmentResponse.model_validate(app) for app in appointments]
 
 
-# -------- Citas por negocio (básico) --------
 @router.get("/business/{business_id}", response_model=List[AppointmentResponse])
 async def get_business_appointments(business_id: str, db: AsyncIOMotorDatabase = Depends(get_database)):
     apps = await crud_appointment.get_appointments_by_business_id(db, business_id=business_id)
     return [AppointmentResponse.model_validate(app) for app in apps]
 
 
-# -------- Citas por negocio con usuario --------
 @router.get("/business/{business_id}/with-users", response_model=List[AppointmentWithUserResponse])
 async def get_business_appointments_with_users(
     business_id: str,
@@ -155,7 +147,6 @@ async def get_business_appointments_with_users(
     return [AppointmentWithUserResponse.model_validate(a) for a in appts]
 
 
-# -------- Cancelar cita (envía correo; el diálogo permite reintentar) --------
 @router.post("/{appointment_id}/cancel", response_model=AppointmentResponse)
 async def cancel_my_appointment(
     appointment_id: str,
@@ -166,7 +157,6 @@ async def cancel_my_appointment(
     if not appt:
         raise HTTPException(status_code=404, detail="Cita no encontrada o no te pertenece.")
 
-    # Evita cancelar citas pasadas
     now = datetime.now(timezone.utc)
     appt_time = appt["appointment_time"]
     if appt_time.tzinfo is None:
@@ -181,7 +171,6 @@ async def cancel_my_appointment(
 
     appt = await crud_appointment.update_status(db, appointment_id, current_user.id, "cancelled")
 
-    # Envío de correo de cancelación (puede fallar si SMTP no está configurado)
     business = await crud_business.get_business(db, str(appt["business_id"]))
     details = {
         "id": appointment_id,
@@ -199,7 +188,6 @@ async def cancel_my_appointment(
     return AppointmentResponse.model_validate(appt)
 
 
-# -------- Reenviar correo de cancelación (para el diálogo) --------
 @router.post("/{appointment_id}/send-cancellation-email", status_code=status.HTTP_200_OK)
 async def resend_cancellation_email(
     appointment_id: str,

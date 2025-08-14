@@ -24,7 +24,6 @@ async def create_business(db: AsyncIOMotorDatabase, business_in: BusinessCreate,
         "categories": [],
         "schedule": Schedule().model_dump(),
         "created_at": datetime.utcnow(),
-        # si no existiera, por defecto genérico
         "appointment_mode": business_data.get("appointment_mode", "generico"),
     })
     result = await db.businesses.insert_one(business_data)
@@ -49,7 +48,6 @@ async def update_business_schedule(db: AsyncIOMotorDatabase, business_id: str, s
     await db.businesses.update_one({"_id": ObjectId(business_id)}, {"$set": {"schedule": schedule_in.model_dump()}})
     return await get_business(db, business_id)
 
-# -------- DISPONIBILIDAD (acepta employee_id opcional) --------
 async def get_available_slots_for_day(
     db: AsyncIOMotorDatabase,
     business_id: str,
@@ -75,7 +73,6 @@ async def get_available_slots_for_day(
     slot_duration = int(day_schedule["slot_duration_minutes"])
     capacity_business = int(day_schedule["capacity_per_slot"])
 
-    # construir slots base del negocio
     from_time = datetime.combine(request_date, open_time)
     to_time = datetime.combine(request_date, close_time)
     all_slots = []
@@ -105,7 +102,7 @@ async def get_available_slots_for_day(
         allowed_set = set(allowed)
         all_slots = [s for s in all_slots if s in allowed_set]
 
-        capacity = 1  # por empleado: 1 a la vez
+        capacity = 1  
         appointments = await get_appointments_by_business_id_and_date(
             db, business_id, request_date, employee_id=employee_id
         )
@@ -114,7 +111,6 @@ async def get_available_slots_for_day(
             db, business_id, request_date
         )
 
-    # contar ocupación
     slot_counts = {}
     for app in appointments:
         t = app["appointment_time"].strftime("%H:%M")

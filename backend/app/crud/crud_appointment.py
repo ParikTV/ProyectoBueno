@@ -3,7 +3,6 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from bson import ObjectId
 from datetime import datetime, timedelta
 
-# ---------- Crear ----------
 async def create(
     db: AsyncIOMotorDatabase,
     *,
@@ -25,7 +24,6 @@ async def create(
     res = await db["appointments"].insert_one(doc)
     return await db["appointments"].find_one({"_id": res.inserted_id})
 
-# ---------- Lecturas ----------
 async def get_appointment_by_id(db: AsyncIOMotorDatabase, appointment_id: str, user_id: str):
     if not ObjectId.is_valid(appointment_id):
         return None
@@ -53,7 +51,6 @@ async def get_appointments_by_business_id_and_date(
         query["employee_id"] = ObjectId(employee_id)
     return await db["appointments"].find(query).to_list(1000)
 
-# ---------- Con usuario ----------
 async def get_business_appointments_with_users(db: AsyncIOMotorDatabase, business_id: str) -> List[Dict[str, Any]]:
     if not ObjectId.is_valid(business_id):
         return []
@@ -76,7 +73,6 @@ async def get_business_appointments_with_users(db: AsyncIOMotorDatabase, busines
 
     return appts
 
-# ---------- Actualizar estado ----------
 async def update_status(
     db: AsyncIOMotorDatabase,
     appointment_id: str,

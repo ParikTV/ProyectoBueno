@@ -1,7 +1,7 @@
 // src/pages/BusinessDetailsPage.tsx
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { API_BASE_URL } from '@/services/api';
-import { Business, Appointment, Employee } from '@/types'; // <-- quitamos UserResponse
+import { Business, Appointment, Employee } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
 import { ExtendedPage } from '@/App';
 import { LocationDisplay } from '@/components/LocationDisplay';
@@ -20,7 +20,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import StarIcon from '@mui/icons-material/Star';
 import ReviewsIcon from '@mui/icons-material/Reviews';
 
-// Helpers
+/* Helpers */
 const safeId = (obj: { id?: string; _id?: string } | null | undefined) =>
   (obj?.id as string) || (obj?._id as string) || '';
 
@@ -47,7 +47,6 @@ type Review = {
   reply?: ReviewReply;
 };
 
-// Tipo local para el usuario (para mostrar nombre/foto)
 type UserLite = {
   id?: string;
   _id?: string;
@@ -141,9 +140,11 @@ const BookingModal: React.FC<{
 
   useEffect(() => {
     const fetchEmployees = async () => {
-      if (!needEmployee || !business.id) return;
+      if (!needEmployee) return;
+      const bizId = bizIdOf(business as any);
+      if (!bizId) return;
       try {
-        const res = await fetch(`${API_BASE_URL}/employees/businesses/${business.id}/employees`);
+        const res = await fetch(`${API_BASE_URL}/employees/businesses/${bizId}/employees`);
         if (!res.ok) throw new Error('No se pudieron cargar los empleados.');
         const data = await res.json();
         setEmployees(data);
@@ -153,11 +154,12 @@ const BookingModal: React.FC<{
       }
     };
     void fetchEmployees();
-  }, [needEmployee, business.id]);
+  }, [needEmployee, business]);
 
   useEffect(() => {
     const fetchSlots = async () => {
-      if (!selectedDate || !business.id) return;
+      const bizId = bizIdOf(business as any);
+      if (!selectedDate || !bizId) return;
       if (needEmployee && !employeeId) {
         setAvailableSlots([]);
         return;
@@ -168,7 +170,7 @@ const BookingModal: React.FC<{
       try {
         const query = new URLSearchParams({ date: selectedDate });
         if (needEmployee && employeeId) query.set('employee_id', employeeId);
-        const res = await fetch(`${API_BASE_URL}/businesses/${business.id}/available-slots?${query.toString()}`);
+        const res = await fetch(`${API_BASE_URL}/businesses/${bizId}/available-slots?${query.toString()}`);
         if (!res.ok) throw new Error('No se pudo cargar la disponibilidad para este día.');
         setAvailableSlots(await res.json());
       } catch (err: any) {
@@ -179,7 +181,7 @@ const BookingModal: React.FC<{
       }
     };
     void fetchSlots();
-  }, [selectedDate, business.id, needEmployee, employeeId]);
+  }, [selectedDate, business, needEmployee, employeeId]);
 
   const handleBooking = async () => {
     if (!selectedSlot) { setError('Por favor, selecciona una hora.'); return; }
@@ -187,8 +189,9 @@ const BookingModal: React.FC<{
 
     setIsLoading(true); setError('');
     try {
+      const bizId = bizIdOf(business as any);
       const appointmentTime = `${selectedDate}T${selectedSlot}:00`;
-      const body: any = { business_id: business.id, appointment_time: appointmentTime };
+      const body: any = { business_id: bizId, appointment_time: appointmentTime };
       if (needEmployee) body.employee_id = employeeId;
 
       const res = await fetch(`${API_BASE_URL}/appointments/`, {
@@ -197,7 +200,7 @@ const BookingModal: React.FC<{
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const errData = await res.json();
+        const errData = await res.json().catch(() => ({}));
         throw new Error(errData.detail || 'No se pudo crear la cita.');
       }
       const responseData = await res.json();
@@ -218,7 +221,7 @@ const BookingModal: React.FC<{
         elevation: 8,
       }}
     >
-      <DialogTitle sx={{ fontWeight: 800 }}>{`Reservar en ${business.name}`}</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 800 }}>{`Reservar en ${(business as any).name}`}</DialogTitle>
       <DialogContent>
         <Typography color="text.secondary" variant="body2" sx={{ mb: 2 }}>
           Completa los pasos para confirmar tu cita
@@ -261,7 +264,7 @@ const BookingModal: React.FC<{
                 )}
                 {employees.map((emp) => {
                   const id = safeId(emp as any);
-                  return <MenuItem key={id} value={id}>{emp.name}</MenuItem>;
+                  return <MenuItem key={id} value={id}>{(emp as any).name}</MenuItem>;
                 })}
               </Select>
             </FormControl>
@@ -315,10 +318,10 @@ const BookingModal: React.FC<{
   );
 };
 
-/* ------------------ Bloque de Reseñas ------------------ */
+/* ------------------ Bloque de Reseñas (incluye appointment_id) ------------------ */
 const ReviewsSection: React.FC<{
   businessId: string;
-  canReview: boolean;
+  canReview: boolean; // se usa para UI, pero internamente resolvemos appointmentId
 }> = ({ businessId, canReview }) => {
   const { token, user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -328,20 +331,87 @@ const ReviewsSection: React.FC<{
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [appointmentId, setAppointmentId] = useState<string | null>(null);
 
   const REVIEWS_LIST_URL = `${API_BASE_URL}/reviews/business/${businessId}`;
   const REVIEWS_CREATE_URL = `${API_BASE_URL}/reviews/`;
+
+  const fetchJSON = async (url: string, init?: RequestInit) => {
+    const res = await fetch(url, init);
+    const text = await res.text();
+    let data: any = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { /* ignore */ }
+    if (!res.ok) {
+      const detail = data?.detail ?? data?.message ?? text ?? 'Error';
+      const msg =
+        typeof detail === 'string'
+          ? detail
+          : Array.isArray(detail)
+          ? detail.map((d: any) => d.msg || d.error || d.detail).join(' | ')
+          : JSON.stringify(detail);
+      throw new Error(msg);
+    }
+    return data;
+  };
+
+  const normalizeId = (x: any): string | null => {
+    if (!x) return null;
+    if (typeof x === 'string') return x;
+    if (typeof x === 'object') return (x.$oid || x._id || x.id) ?? null;
+    return null;
+  };
+
+  const resolveAppointmentId = useCallback(async () => {
+    if (!token) { setAppointmentId(null); return; }
+
+    // 1) Intenta endpoint de elegibilidad
+    try {
+      const elig = await fetchJSON(`${API_BASE_URL}/reviews/eligibility/${businessId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (elig?.eligible) {
+        if (elig?.appointment_id) { setAppointmentId(elig.appointment_id); return; }
+        // si no envían appointment_id pasamos a fallback
+      } else {
+        setAppointmentId(null);
+        return;
+      }
+    } catch { /* seguimos con fallback */ }
+
+    // 2) Fallback: usar /appointments/me para hallar la última cita válida
+    try {
+      const myApps: any[] = await fetchJSON(`${API_BASE_URL}/appointments/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const now = Date.now();
+      const candidates = (myApps || []).filter((a) => {
+        const bId = normalizeId(a.business_id);
+        const status = (a.status || '').toLowerCase();
+        const t = a.appointment_time ? new Date(a.appointment_time).getTime() : 0;
+        const notCancelled = status !== 'cancelled' && status !== 'canceled';
+        const passedOrNoTime = !t || t <= now;
+        return bId === businessId && notCancelled && passedOrNoTime;
+      });
+      if (!candidates.length) { setAppointmentId(null); return; }
+      candidates.sort((x, y) => {
+        const tx = x.appointment_time ? new Date(x.appointment_time).getTime() : 0;
+        const ty = y.appointment_time ? new Date(y.appointment_time).getTime() : 0;
+        return ty - tx;
+      });
+      const id = normalizeId(candidates[0]?._id);
+      setAppointmentId(id);
+    } catch {
+      setAppointmentId(null);
+    }
+  }, [businessId, token]);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const r = await fetch(REVIEWS_LIST_URL);
-      if (!r.ok) throw new Error('No se pudieron cargar las reseñas.');
-      const data: Review[] = await r.json();
+      const data: Review[] = await fetchJSON(REVIEWS_LIST_URL);
       setReviews(data);
 
-      // cargar usuarios
       const uniqUserIds = Array.from(new Set(data.map(d => d.user_id)));
       const entries: Record<string, UserLite> = {};
       await Promise.all(uniqUserIds.map(async (uid) => {
@@ -351,7 +421,7 @@ const ReviewsSection: React.FC<{
             const u = await ru.json();
             entries[uid] = u as UserLite;
           }
-        } catch {}
+        } catch { /* ignore */ }
       }));
       setUsersMap(entries);
     } catch (e: any) {
@@ -362,6 +432,7 @@ const ReviewsSection: React.FC<{
   }, [REVIEWS_LIST_URL]);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void resolveAppointmentId(); }, [resolveAppointmentId]);
 
   const avg = useMemo(() => {
     if (!reviews.length) return 0;
@@ -373,11 +444,12 @@ const ReviewsSection: React.FC<{
     if (!token) return alert('Inicia sesión para opinar.');
     if (!rating || rating < 1) return alert('Selecciona una puntuación.');
     if (!comment.trim()) return alert('Escribe un comentario.');
+    if (!appointmentId) { setError('No pudimos validar una cita elegible para este negocio.'); return; }
 
     setSubmitting(true);
     setError('');
     try {
-      const res = await fetch(REVIEWS_CREATE_URL, {
+      await fetchJSON(REVIEWS_CREATE_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -385,23 +457,22 @@ const ReviewsSection: React.FC<{
         },
         body: JSON.stringify({
           business_id: businessId,
+          appointment_id: appointmentId, // CLAVE para evitar 422
           rating,
           comment: comment.trim(),
         }),
       });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.detail || 'No se pudo enviar tu reseña.');
-      }
       setRating(0);
       setComment('');
-      void load();
+      await load();
     } catch (e: any) {
       setError(e.message);
     } finally {
       setSubmitting(false);
     }
   };
+
+  const uiCanReview = Boolean(appointmentId) || canReview;
 
   return (
     <Paper variant="outlined" sx={{ mt: 4, p: { xs: 2, md: 3 }, borderRadius: 3 }}>
@@ -418,7 +489,7 @@ const ReviewsSection: React.FC<{
       </Stack>
 
       {/* Formulario */}
-      {canReview ? (
+      {uiCanReview ? (
         <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
           <Stack spacing={1.5}>
             <Stack direction="row" alignItems="center" spacing={1}>
@@ -441,9 +512,9 @@ const ReviewsSection: React.FC<{
               onChange={e => setComment(e.target.value)}
               fullWidth
             />
-            <Stack direction="row" spacing={1}>
+            <Stack direction="row" spacing={1} alignItems="center">
               <Button variant="contained" onClick={submit} disabled={submitting}>Publicar reseña</Button>
-              {error && <Alert severity="error" sx={{ ml: 1 }}>{error}</Alert>}
+              {error && <Alert severity="warning" sx={{ ml: 1 }}>{error}</Alert>}
             </Stack>
           </Stack>
         </Paper>
@@ -559,9 +630,9 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
 
         const now = Date.now();
         const eligible = myApps.some(a =>
-          a.business_id === bizId &&
-          new Date(a.appointment_time).getTime() < now &&
-          a.status !== 'cancelled'
+          (a as any).business_id === bizId &&
+          new Date((a as any).appointment_time).getTime() < now &&
+          (a as any).status !== 'cancelled'
         );
         setCanReview(eligible);
       } catch {
@@ -579,7 +650,9 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
 
   const allImages = useMemo(() => {
     if (!business) return [];
-    return Array.from(new Set([...(business.logo_url ? [business.logo_url] : []), ...(business.photos || [])]));
+    const b: any = business;
+    const pics: string[] = Array.isArray(b.photos) ? b.photos : [];
+    return Array.from(new Set([...(b.logo_url ? [b.logo_url] : []), ...pics]));
   }, [business]);
 
   const goToPrevious = () => setCurrentImageIndex(prev => (prev === 0 ? allImages.length - 1 : prev - 1));
@@ -588,7 +661,7 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
   if (isLoading) return <Box sx={{ textAlign: 'center', p: 4 }}><CircularProgress /></Box>;
   if (!business) return <Box sx={{ textAlign: 'center', p: 4 }}><Typography>Negocio no encontrado.</Typography></Box>;
 
-  const canBook = business.status === 'published' && !!(business as any).schedule;
+  const canBook = (business as any).status === 'published' && !!(business as any).schedule;
 
   return (
     <Box>
@@ -629,7 +702,7 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
           )}
           <img
             src={allImages[currentImageIndex] || 'https://placehold.co/600x400?text=Sin+Imagen'}
-            alt={business.name}
+            alt={(business as any).name}
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         </Box>
@@ -637,13 +710,13 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
         {/* Info */}
         <Box>
           <Typography color="text.secondary" fontWeight="bold" textTransform="uppercase">
-            {(business.categories || []).join(', ') || 'Sin Categoría'}
+            {((business as any).categories || []).join(', ') || 'Sin Categoría'}
           </Typography>
           <Typography variant="h3" component="h1" fontWeight="bold" gutterBottom>
-            {business.name}
+            {(business as any).name}
           </Typography>
           <Typography color="text.secondary" variant="h6" sx={{ mb: 2 }}>
-            {business.address}
+            {(business as any).address}
           </Typography>
 
           <Button
@@ -667,18 +740,18 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
 
           <Box mb={3}>
             <Typography variant="h5" fontWeight="600" gutterBottom>Descripción</Typography>
-            <Typography color="text.secondary">{business.description}</Typography>
+            <Typography color="text.secondary">{(business as any).description}</Typography>
           </Box>
 
           <Box>
             <Typography variant="h5" fontWeight="600" gutterBottom>Ubicación</Typography>
-            <LocationDisplay address={business.address} />
+            <LocationDisplay address={(business as any).address} />
           </Box>
         </Box>
       </Paper>
 
       {/* Reseñas */}
-      <ReviewsSection businessId={bizIdOf(business)} canReview={canReview} />
+      <ReviewsSection businessId={bizIdOf(business as any)} canReview={canReview} />
     </Box>
   );
 };

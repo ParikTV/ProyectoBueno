@@ -13,16 +13,14 @@ def _oid(id_str: str) -> ObjectId:
     return ObjectId(id_str)
 
 def _employee_to_response(doc: Dict[str, Any]) -> Dict[str, Any]:
-    # Convierte todo lo que sea ObjectId -> str
     return {
         "id": str(doc.get("_id")),
         "business_id": str(doc.get("business_id")) if isinstance(doc.get("business_id"), ObjectId) else doc.get("business_id"),
         "name": doc.get("name", ""),
         "active": bool(doc.get("active", True)),
-        "allowed_slots": doc.get("allowed_slots", {}),  # { monday: ["09:00", ...], ... }
+        "allowed_slots": doc.get("allowed_slots", {}),  
     }
 
-# ----- LISTAR empleados de un negocio -----
 @router.get("/businesses/{business_id}/employees")
 async def list_employees(
     business_id: str,
@@ -36,7 +34,6 @@ async def list_employees(
     items = await cur.to_list(length=None)
     return [_employee_to_response(x) for x in items]
 
-# ----- CREAR empleado -----
 @router.post("/businesses/{business_id}/employees", status_code=status.HTTP_201_CREATED)
 async def create_employee(
     business_id: str,
@@ -56,7 +53,6 @@ async def create_employee(
     created = await db["employees"].find_one({"_id": res.inserted_id})
     return _employee_to_response(created)
 
-# ----- PATCH (nombre/activo) -----
 @router.patch("/employees/{employee_id}")
 async def update_employee(
     employee_id: str,
@@ -76,13 +72,11 @@ async def update_employee(
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
     return _employee_to_response(doc)
 
-# ----- DELETE (borrado real) -----
 @router.delete("/employees/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_employee(employee_id: str, db: AsyncIOMotorDatabase = Depends(get_database)):
     await db["employees"].delete_one({"_id": _oid(employee_id)})
     return {}
 
-# ----- PUT allowed-slots -----
 @router.put("/employees/{employee_id}/allowed-slots")
 async def set_allowed_slots(
     employee_id: str,
@@ -92,7 +86,6 @@ async def set_allowed_slots(
     allowed_slots = payload.get("allowed_slots") or {}
     if not isinstance(allowed_slots, dict):
         raise HTTPException(status_code=400, detail="allowed_slots debe ser un objeto")
-    # Normaliza valores a listas de strings
     norm: Dict[str, List[str]] = {}
     for k, v in allowed_slots.items():
         if isinstance(v, list):
@@ -103,7 +96,6 @@ async def set_allowed_slots(
         raise HTTPException(status_code=404, detail="Empleado no encontrado")
     return _employee_to_response(doc)
 
-# ----- GET detalle (opcional, útil para depurar) -----
 @router.get("/employees/{employee_id}")
 async def get_employee(employee_id: str, db: AsyncIOMotorDatabase = Depends(get_database)) -> Dict[str, Any]:
     doc = await db["employees"].find_one({"_id": _oid(employee_id)})

@@ -1,4 +1,3 @@
-# backend/app/schemas/user.py
 
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
@@ -19,8 +18,8 @@ class UserBase(BaseModel):
     phone_number: Optional[str] = None
     role: str = 'usuario'
     owner_request: Optional[OwnerRequestSchema] = None
-    profile_picture_url: Optional[str] = None # <-- NUEVA LÍNEA
-
+    profile_picture_url: Optional[str] = None 
+    
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
@@ -28,7 +27,7 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     phone_number: Optional[str] = None
-    profile_picture_url: Optional[str] = None # <-- NUEVA LÍNEA
+    profile_picture_url: Optional[str] = None 
 
 class UserResponse(UserBase):
     id: PyObjectId = Field(alias="_id")
