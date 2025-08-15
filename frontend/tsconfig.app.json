@@ -23,7 +23,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-    /* --- NUESTRAS LÍNEAS PARA SOLUCIONAR EL PROBLEMA --- */
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]

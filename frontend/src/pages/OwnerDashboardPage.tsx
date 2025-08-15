@@ -1,4 +1,4 @@
-// src/pages/OwnerDashboardPage.tsx
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { API_BASE_URL } from '@/services/api';
@@ -31,9 +31,6 @@ interface IEmployee {
 const getId = (o: { id?: string; _id?: string } | null | undefined) =>
   (o?.id as string) || (o?._id as string) || '';
 
-/* ============================================================================================
-   DIALOG: Turnos (slots) por empleado – basado en HORARIO DEL NEGOCIO
-================================================================================================ */
 const EmployeeScheduleDialog: React.FC<{
   open: boolean; onClose: () => void; employee: IEmployee; businessId: string; onSaved: () => void;
 }> = ({ open, onClose, employee, businessId, onSaved }) => {
@@ -158,9 +155,6 @@ const EmployeeScheduleDialog: React.FC<{
   );
 };
 
-/* ============================================================================================
-   EMPLOYEE MANAGER
-================================================================================================ */
 const EmployeeManager: React.FC<{ businessId: string }> = ({ businessId }) => {
   const { token } = useAuth();
   const [employees, setEmployees] = useState<IEmployee[]>([]);
@@ -207,7 +201,7 @@ const EmployeeManager: React.FC<{ businessId: string }> = ({ businessId }) => {
     try {
       await fetch(`${API_BASE_URL}/employees/employees/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ active: !emp.active }) });
       void load();
-    } catch { /* noop */ }
+    } catch {  }
   };
 
   const remove = async (emp: IEmployee) => {
@@ -216,7 +210,7 @@ const EmployeeManager: React.FC<{ businessId: string }> = ({ businessId }) => {
     try {
       await fetch(`${API_BASE_URL}/employees/employees/${id}`, { method: 'DELETE', headers });
       void load();
-    } catch { /* noop */ }
+    } catch {  }
   };
 
   return (
@@ -279,9 +273,6 @@ const EmployeeManager: React.FC<{ businessId: string }> = ({ businessId }) => {
   );
 };
 
-/* ============================================================================================
-   REGISTRO DE NEGOCIO
-================================================================================================ */
 const BusinessRegistrationForm: React.FC<{ onSave: () => void; onCancel: () => void; }> = ({ onSave, onCancel }) => {
   const { token } = useAuth();
   const [formData, setFormData] = useState({ name: '', description: '', address: ''});
@@ -342,9 +333,6 @@ const BusinessRegistrationForm: React.FC<{ onSave: () => void; onCancel: () => v
   );
 };
 
-/* ============================================================================================
-   EDICIÓN DE NEGOCIO (incluye selector de modo de citas)
-================================================================================================ */
 const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCancel: () => void; }> = ({ business, onSave, onCancel }) => {
   const { token } = useAuth();
   const [formData, setFormData] = useState<Business & { appointment_mode?: AppointmentMode }>(business as any);
@@ -389,7 +377,7 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
       try {
         const res = await fetch(`${API_BASE_URL}/categories/`);
         if (res.ok) setAllCategories(await res.json());
-      } catch { /* noop */ }
+      } catch {  }
     };
     fetchCategories();
   }, []);
@@ -444,7 +432,7 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
             <TextField label="Dirección Seleccionada" value={formData.address} InputProps={{readOnly: true}} fullWidth sx={{mt: 2}} />
           </Box>
 
-          {/* Modo de citas */}
+          {}
           <FormControl fullWidth>
             <InputLabel id="mode-label">Modo de citas</InputLabel>
             <Select
@@ -506,9 +494,6 @@ const BusinessEditForm: React.FC<{ business: Business; onSave: () => void; onCan
   );
 };
 
-/* ============================================================================================
-   HORARIO DEL NEGOCIO
-================================================================================================ */
 const ManageScheduleForm: React.FC<{ business: Business; onSave: () => void; onCancel: () => void; }> = ({ business, onSave, onCancel }) => {
   const { token } = useAuth();
   const [schedule, setSchedule] = useState<Schedule>(business.schedule || {
@@ -592,9 +577,6 @@ const ManageScheduleForm: React.FC<{ business: Business; onSave: () => void; onC
   );
 };
 
-/* ============================================================================================
-   PÁGINA PRINCIPAL DEL DUEÑO
-================================================================================================ */
 export const OwnerDashboardPage: React.FC<{navigateTo: (page: ExtendedPage, businessId?: string) => void;}> = ({ navigateTo }) => {
   const { token } = useAuth();
   const [businesses, setBusinesses] = useState<Business[]>([]);

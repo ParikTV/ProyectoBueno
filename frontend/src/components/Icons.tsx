@@ -1,7 +1,7 @@
-// src/components/Icons.tsx
+
 
 import { SvgIcon } from '@mui/material';
-// We import the component (value) itself as the default export.
+
 import SvgIconComponent from '@mui/material/SvgIcon';
 
 import ContentCutIcon from '@mui/icons-material/ContentCut';
@@ -15,7 +15,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import SearchIcon from '@mui/icons-material/Search';
 
-// --- CUSTOM ICON DEFINITIONS FROM TEMPLATE ---
+
 
 export function GoogleIcon() {
   return (
@@ -84,8 +84,8 @@ export function FacebookIcon() {
   );
 }
 
-// Icon map for category cards
-// FIX: We use `typeof SvgIconComponent` to get the TYPE from the imported VALUE.
+
+
 export const iconMap: { [key: string]: typeof SvgIconComponent } = {
   'barbería': ContentCutIcon,
   'tatuajes': BrushIcon,
@@ -94,7 +94,7 @@ export const iconMap: { [key: string]: typeof SvgIconComponent } = {
   'default': StorefrontIcon
 };
 
-// Individual exports for other components to use
+
 export {
     StarIcon,
     StarBorderIcon,

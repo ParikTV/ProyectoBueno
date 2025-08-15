@@ -1,4 +1,4 @@
-// src/components/ForgotPassword.tsx
+
 
 import * as React from 'react';
 import Button from '@mui/material/Button';
@@ -24,7 +24,7 @@ export default function ForgotPassword({ open, handleClose }: ForgotPasswordProp
           component: 'form',
           onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
             event.preventDefault();
-            // Aquí iría la lógica para enviar el correo de reseteo
+
             handleClose();
           },
           sx: { backgroundImage: 'none' },

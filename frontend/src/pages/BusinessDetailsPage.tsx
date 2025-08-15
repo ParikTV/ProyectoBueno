@@ -1,4 +1,4 @@
-// src/pages/BusinessDetailsPage.tsx
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { API_BASE_URL } from '@/services/api';
 import { Business, Appointment, Employee } from '@/types';
@@ -20,16 +20,13 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import StarIcon from '@mui/icons-material/Star';
 import ReviewsIcon from '@mui/icons-material/Reviews';
 
-/* Helpers */
+
 const safeId = (obj: { id?: string; _id?: string } | null | undefined) =>
   (obj?.id as string) || (obj?._id as string) || '';
 
 const bizIdOf = (b?: { id?: string; _id?: string }) =>
   (b?.id as string) || (b?._id as string) || '';
 
-/* -------------------------------------------------------
-   Tipos mínimos (ajusta a tu backend si hace falta)
---------------------------------------------------------*/
 type ReviewReply = {
   text: string;
   role: 'owner' | 'admin';
@@ -41,7 +38,7 @@ type Review = {
   _id?: string;
   business_id: string;
   user_id: string;
-  rating: number; // 1..5
+  rating: number;
   comment: string;
   created_at: string;
   reply?: ReviewReply;
@@ -56,7 +53,7 @@ type UserLite = {
   role?: string;
 };
 
-/* ------------------ Confirmación y envío por correo ------------------ */
+
 const ConfirmationDialog: React.FC<{
   appointment: Appointment;
   onClose: () => void;
@@ -113,7 +110,7 @@ const ConfirmationDialog: React.FC<{
   );
 };
 
-/* ------------------ Modal de Reserva ------------------ */
+
 const BookingModal: React.FC<{
   business: Business;
   onClose: () => void;
@@ -230,7 +227,7 @@ const BookingModal: React.FC<{
 
         {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
 
-        {/* Paso 1: Fecha */}
+        {}
         <Box sx={{ mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <CalendarMonthIcon /><Typography fontWeight={700}>1. Elige una fecha</Typography>
@@ -244,7 +241,7 @@ const BookingModal: React.FC<{
           />
         </Box>
 
-        {/* Paso 2: Empleado (si aplica) */}
+        {}
         {needEmployee && (
           <Box sx={{ mb: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
@@ -271,7 +268,7 @@ const BookingModal: React.FC<{
           </Box>
         )}
 
-        {/* Paso 3: Horario */}
+        {}
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <AccessTimeIcon /><Typography fontWeight={700}>3. Elige una hora disponible</Typography>
@@ -318,10 +315,10 @@ const BookingModal: React.FC<{
   );
 };
 
-/* ------------------ Bloque de Reseñas (incluye appointment_id) ------------------ */
+
 const ReviewsSection: React.FC<{
   businessId: string;
-  canReview: boolean; // se usa para UI, pero internamente resolvemos appointmentId
+  canReview: boolean;
 }> = ({ businessId, canReview }) => {
   const { token, user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -340,7 +337,7 @@ const ReviewsSection: React.FC<{
     const res = await fetch(url, init);
     const text = await res.text();
     let data: any = {};
-    try { data = text ? JSON.parse(text) : {}; } catch { /* ignore */ }
+    try { data = text ? JSON.parse(text) : {}; } catch {  }
     if (!res.ok) {
       const detail = data?.detail ?? data?.message ?? text ?? 'Error';
       const msg =
@@ -364,21 +361,21 @@ const ReviewsSection: React.FC<{
   const resolveAppointmentId = useCallback(async () => {
     if (!token) { setAppointmentId(null); return; }
 
-    // 1) Intenta endpoint de elegibilidad
+
     try {
       const elig = await fetchJSON(`${API_BASE_URL}/reviews/eligibility/${businessId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (elig?.eligible) {
         if (elig?.appointment_id) { setAppointmentId(elig.appointment_id); return; }
-        // si no envían appointment_id pasamos a fallback
+
       } else {
         setAppointmentId(null);
         return;
       }
-    } catch { /* seguimos con fallback */ }
+    } catch {  }
 
-    // 2) Fallback: usar /appointments/me para hallar la última cita válida
+
     try {
       const myApps: any[] = await fetchJSON(`${API_BASE_URL}/appointments/me`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -421,7 +418,7 @@ const ReviewsSection: React.FC<{
             const u = await ru.json();
             entries[uid] = u as UserLite;
           }
-        } catch { /* ignore */ }
+        } catch {  }
       }));
       setUsersMap(entries);
     } catch (e: any) {
@@ -457,7 +454,7 @@ const ReviewsSection: React.FC<{
         },
         body: JSON.stringify({
           business_id: businessId,
-          appointment_id: appointmentId, // CLAVE para evitar 422
+          appointment_id: appointmentId,
           rating,
           comment: comment.trim(),
         }),
@@ -481,14 +478,14 @@ const ReviewsSection: React.FC<{
         <Typography variant="h5" fontWeight={700}>Reseñas</Typography>
       </Stack>
 
-      {/* Header promedio */}
+      {}
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
         <Rating value={avg} precision={0.1} readOnly />
         <Typography fontWeight={700}>{avg.toFixed(1)}</Typography>
         <Typography color="text.secondary">· {reviews.length} reseña{reviews.length !== 1 ? 's' : ''}</Typography>
       </Stack>
 
-      {/* Formulario */}
+      {}
       {uiCanReview ? (
         <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
           <Stack spacing={1.5}>
@@ -524,7 +521,7 @@ const ReviewsSection: React.FC<{
         </Alert>
       )}
 
-      {/* Listado */}
+      {}
       {loading ? (
         <Box sx={{ textAlign: 'center', py: 3 }}><CircularProgress size={22} /></Box>
       ) : reviews.length === 0 ? (
@@ -579,7 +576,7 @@ const ReviewsSection: React.FC<{
   );
 };
 
-/* ------------------ Página de Detalle ------------------ */
+
 interface BusinessDetailsPageProps {
   businessId: string;
   navigateTo: (page: ExtendedPage) => void;
@@ -593,7 +590,7 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
   const [confirmedAppointment, setConfirmedAppointment] = useState<Appointment | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // ¿Puede opinar este usuario?
+
   const [canReview, setCanReview] = useState(false);
 
   const fetchDetails = useCallback(async () => {
@@ -611,7 +608,7 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
 
   useEffect(() => { void fetchDetails(); }, [fetchDetails]);
 
-  // Chequeo para poder opinar: cita pasada y no cancelada
+
   useEffect(() => {
     const run = async () => {
       try {
@@ -688,7 +685,7 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
         p: { xs: 2, md: 4 },
         borderRadius: 4
       }}>
-        {/* Carrusel */}
+        {}
         <Box sx={{ position: 'relative', width: '100%', height: { xs: 300, md: 450 }, borderRadius: 2, overflow: 'hidden' }}>
           {allImages.length > 1 && (
             <>
@@ -707,7 +704,7 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
           />
         </Box>
 
-        {/* Info */}
+        {}
         <Box>
           <Typography color="text.secondary" fontWeight="bold" textTransform="uppercase">
             {((business as any).categories || []).join(', ') || 'Sin Categoría'}
@@ -750,7 +747,7 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
         </Box>
       </Paper>
 
-      {/* Reseñas */}
+      {}
       <ReviewsSection businessId={bizIdOf(business as any)} canReview={canReview} />
     </Box>
   );

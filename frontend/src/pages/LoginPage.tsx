@@ -1,7 +1,7 @@
-// src/pages/LoginPage.tsx
+
 
 import React, { useState } from 'react';
-import { Box, Button, Checkbox, CssBaseline, Divider, FormControlLabel, FormLabel, FormControl, Link, TextField, Typography, Stack, Card, Alert } from '@mui/material'; // FIX: Se añade 'Alert' a la importación
+import { Box, Button, Checkbox, CssBaseline, Divider, FormControlLabel, FormLabel, FormControl, Link, TextField, Typography, Stack, Card, Alert } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { useGoogleLogin } from '@react-oauth/google';
 

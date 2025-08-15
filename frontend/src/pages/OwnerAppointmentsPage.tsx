@@ -1,4 +1,4 @@
-// src/pages/OwnerAppointmentsPage.tsx
+
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,12 +18,12 @@ interface OwnerAppointmentsPageProps {
   businessId: string;
 }
 
-// Estructura que devuelve el endpoint /with-users
+
 type ApptWithUser = {
   id?: string; _id?: string;
   business_id: string;
   user_id: string;
-  appointment_time: string; // ISO
+  appointment_time: string;
   status: 'confirmed' | 'cancelled';
   employee_id?: string | null;
   user?: {
@@ -127,7 +127,7 @@ export const OwnerAppointmentsPage: React.FC<OwnerAppointmentsPageProps> = ({ bu
                     <Typography variant="body2" color="text.secondary">
                       {email}
                     </Typography>
-                    {/* Si quieres mostrar el empleado asignado (si existe), descomenta: */}
+                    {}
                     {/* {a.employee_id && (
                       <Typography variant="caption" color="text.secondary" display="block">
                         Empleado asignado: {a.employee_id}

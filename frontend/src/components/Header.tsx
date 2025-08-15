@@ -1,11 +1,11 @@
-// src/components/Header.tsx
+
 
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { ExtendedPage } from '@/App';
 
-// --- MUI Component Imports ---
-import { AppBar, Toolbar, Typography, Button, Box, Avatar, Menu, MenuItem, IconButton, Divider } from '@mui/material'; // FIX: Se añade 'Divider'
+
+import { AppBar, Toolbar, Typography, Button, Box, Avatar, Menu, MenuItem, IconButton, Divider } from '@mui/material';
 import ColorModeSelect from '@/themes/ColorModeSelect';
 
 
@@ -51,7 +51,7 @@ export const Header: React.FC<HeaderProps> = ({ navigateTo }) => {
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     {token && user ? (
                         <>
-                            {/* Menú de Avatar */}
+                            {}
                             <IconButton onClick={handleMenu} size="small">
                                 <Avatar sx={{ width: 32, height: 32 }} src={user.profile_picture_url} />
                             </IconButton>

@@ -1,7 +1,7 @@
-// src/pages/HomePage.tsx
+
 
 import React, { useState, useEffect } from 'react';
-// --- MUI & Map Component Imports ---
+
 import {
     Typography, Box, TextField, Button, Paper, InputAdornment, CircularProgress,
     Card, CardMedia, CardContent, CardActions
@@ -17,14 +17,14 @@ import { Business, Category } from '../types';
 import { API_BASE_URL } from '../services/api';
 import { ExtendedPage } from '../App';
 
-// --- Interfaces para el estado del mapa ---
+
 interface BusinessLocation {
     lat: number;
     lng: number;
     business: Business;
 }
 
-// --- Estilos para el mapa ---
+
 const mapContainerStyle = {
   width: '100%',
   height: '500px',
@@ -36,11 +36,11 @@ const costaRicaCenter = {
   lng: -84.087502
 };
 
-// --- Animaciones (sin cambios) ---
+
 const containerVariants: Variants = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.1 } } };
 const itemVariants: Variants = { hidden: { y: 20, opacity: 0 }, visible: { y: 0, opacity: 1 } };
 
-// --- Componente Principal ---
+
 export const HomePage: React.FC<{ navigateTo: (page: ExtendedPage, businessId?: string) => void; }> = ({ navigateTo }) => {
     const [businesses, setBusinesses] = useState<Business[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -48,7 +48,7 @@ export const HomePage: React.FC<{ navigateTo: (page: ExtendedPage, businessId?: 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     
-    // --- Nuevos estados para el mapa ---
+
     const [locations, setLocations] = useState<BusinessLocation[]>([]);
     const [selectedLocation, setSelectedLocation] = useState<BusinessLocation | null>(null);
     const [isMapLoading, setIsMapLoading] = useState(true);
@@ -79,7 +79,7 @@ export const HomePage: React.FC<{ navigateTo: (page: ExtendedPage, businessId?: 
         fetchInitialData();
     }, []);
 
-    // --- Efecto para Geocodificar las direcciones ---
+
     useEffect(() => {
         if (businesses.length > 0 && window.google) {
             setIsMapLoading(true);
@@ -119,7 +119,7 @@ export const HomePage: React.FC<{ navigateTo: (page: ExtendedPage, businessId?: 
     return (
         <motion.div variants={containerVariants} initial="hidden" animate="visible">
             <Box sx={{ maxWidth: '1280px', mx: 'auto', px: 2 }}>
-                {/* Hero Section */}
+                {}
                 <motion.div variants={itemVariants}>
                     <Box sx={{ textAlign: 'center', my: { xs: 4, md: 8 } }}>
                         <Typography variant="h2" component="h1" gutterBottom sx={{ fontWeight: 'bold', color: 'text.primary' }}>
@@ -131,7 +131,7 @@ export const HomePage: React.FC<{ navigateTo: (page: ExtendedPage, businessId?: 
                     </Box>
                 </motion.div>
                 
-                {/* Search Bar */}
+                {}
                 <motion.div variants={itemVariants}>
                     <Paper elevation={3} sx={{ p: 1, display: 'flex', alignItems: 'center', maxWidth: '800px', mx: 'auto', borderRadius: '50px', mb: { xs: 6, md: 10 }, bgcolor: 'background.paper', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
                         <TextField fullWidth variant="standard" placeholder="Restaurante, hotel, barbería..." InputProps={{ disableUnderline: true, startAdornment: (<InputAdornment position="start" sx={{ pl: 2 }}><SearchIcon color="action" /></InputAdornment>), }} />
@@ -140,7 +140,7 @@ export const HomePage: React.FC<{ navigateTo: (page: ExtendedPage, businessId?: 
                     </Paper>
                 </motion.div>
                 
-                {/* --- NUEVA SECCIÓN DEL MAPA --- */}
+                {}
                 <motion.div variants={itemVariants}>
                     <Box sx={{ my: 6 }}>
                         <Typography variant="h4" component="h2" sx={{ fontWeight: '600', mb: 3, color: 'text.primary' }}>
@@ -195,7 +195,7 @@ export const HomePage: React.FC<{ navigateTo: (page: ExtendedPage, businessId?: 
                     </Box>
                 </motion.div>
 
-                {/* Categories Section */}
+                {}
                 <motion.div variants={itemVariants}>
                     <Box sx={{ mb: 8 }}>
                          <Typography variant="h4" component="h2" gutterBottom color="text.primary" sx={{ fontWeight: '600', mb: 3 }}>
@@ -215,7 +215,7 @@ export const HomePage: React.FC<{ navigateTo: (page: ExtendedPage, businessId?: 
                     </Box>
                 </motion.div>
                 
-                {/* Listings Section */}
+                {}
                 <motion.div variants={itemVariants}>
                     <Box sx={{ mb: 8 }}>
                         <Typography variant="h4" component="h2" gutterBottom color="text.primary" sx={{ fontWeight: '600', mb: 3 }}>

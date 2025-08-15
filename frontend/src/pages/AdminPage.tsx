@@ -1,4 +1,4 @@
-// src/pages/AdminPage.tsx
+
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -11,11 +11,11 @@ import {
     DialogTitle, DialogContent, DialogActions, Link as MuiLink
 } from '@mui/material';
 
-// Interfaces for handling Mongo's _id
+
 interface UserWithMongoId extends UserResponse { _id?: string; }
 interface CategoryRequestWithMongoId extends CategoryRequest { _id?: string; }
 
-// --- Business Creation Form Component ---
+
 const AdminCreateBusinessForm: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
     const { token } = useAuth();
     const [owners, setOwners] = useState<UserWithMongoId[]>([]);
@@ -89,7 +89,7 @@ const AdminCreateBusinessForm: React.FC<{ onUpdate: () => void }> = ({ onUpdate 
     );
 };
 
-// --- Category Creation Form Component ---
+
 const AdminCreateCategoryForm: React.FC<{ onUpdate: () => void }> = ({ onUpdate }) => {
     const { token } = useAuth();
     const [name, setName] = useState('');
@@ -135,7 +135,7 @@ const AdminCreateCategoryForm: React.FC<{ onUpdate: () => void }> = ({ onUpdate 
     );
 };
 
-// --- Request Details Modal Component ---
+
 const RequestDetailsModal: React.FC<{ user: UserWithMongoId; onClose: () => void; onApprove: (userId: string) => void; onReject: (userId: string) => void; }> = ({ user, onClose, onApprove, onReject }) => {
     if (!user.owner_request) return null;
     const { business_name, business_description, address, logo_url } = user.owner_request;
@@ -183,7 +183,7 @@ const RequestDetailsModal: React.FC<{ user: UserWithMongoId; onClose: () => void
     );
 };
 
-// --- Main Admin Page Component ---
+
 export const AdminPage: React.FC = () => {
     const { token, isAdmin, logout } = useAuth();
     
@@ -255,7 +255,7 @@ export const AdminPage: React.FC = () => {
             {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
             {success && <Alert severity="success" sx={{ my: 2 }}>{success}</Alert>}
 
-            {/* FIX: Replaced Grid with a responsive Box layout using Flexbox */}
+            {}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -2, my: 2 }}>
                 <Box sx={{ width: { xs: '100%', md: '50%' }, p: 2 }}>
                     <AdminCreateBusinessForm onUpdate={() => setUpdateTrigger(t => t + 1)} />

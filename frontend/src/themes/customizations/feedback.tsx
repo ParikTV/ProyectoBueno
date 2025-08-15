@@ -18,18 +18,18 @@ export const feedbackCustomizations: Components<Theme> = {
     },
   },
 
-  // 🔒 Dialog sólido sin transparencia
+
   MuiDialog: {
     styleOverrides: {
-      // puedes usar 'paper' directamente en MUI v5
+
       paper: ({ theme }) => ({
         borderRadius: 10,
         border: '1px solid',
         borderColor: (theme.vars || theme).palette.divider,
         backgroundImage: 'none',
-        // fondo opaco (elige uno de los dos estilos)
+
         backgroundColor: (theme.vars || theme).palette.background.paper,
-        // o si prefieres un tono más oscuro en dark:
+
         ...theme.applyStyles('dark', {
           backgroundColor: '#0F1115',
         }),

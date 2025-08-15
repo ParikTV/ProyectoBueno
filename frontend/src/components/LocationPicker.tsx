@@ -1,4 +1,4 @@
-// frontend/src/components/LocationPicker.tsx
+
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleMap, Marker } from '@react-google-maps/api';
@@ -43,11 +43,11 @@ export const LocationPicker: React.FC<LocationPickerProps> = ({ onLocationSelect
     if (e.latLng) {
       const newPos = { lat: e.latLng.lat(), lng: e.latLng.lng() };
       
-      // Actualizamos la posición del marcador
+
       setMarkerPosition(newPos);
       
-      // --- LÍNEA AÑADIDA (ESTA ES LA SOLUCIÓN) ---
-      // También actualizamos el centro del mapa para que se quede donde hiciste clic.
+
+
       setMapCenter(newPos);
 
       const geocoder = new window.google.maps.Geocoder();

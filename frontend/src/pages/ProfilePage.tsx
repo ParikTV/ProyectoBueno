@@ -1,4 +1,4 @@
-// src/pages/ProfilePage.tsx
+
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,9 +6,9 @@ import { API_BASE_URL } from '@/services/api';
 import { UserResponse } from '@/types';
 import { LocationPicker } from '@/components/LocationPicker';
 
-// --- MUI Component Imports ---
+
 import { Box, Typography, Button, Paper, TextField, CircularProgress, Alert, Stack, Divider, Avatar } from '@mui/material';
-// --- Framer Motion for Animations ---
+
 import { motion } from 'framer-motion';
 
 export const ProfilePage: React.FC = () => {
@@ -20,7 +20,7 @@ export const ProfilePage: React.FC = () => {
     const [success, setSuccess] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
     
-    // FIX: Se añade profile_picture_url al estado del formulario de edición
+
     const [editFormData, setEditFormData] = useState({ 
         full_name: '', 
         phone_number: '',
@@ -48,7 +48,7 @@ export const ProfilePage: React.FC = () => {
                 if (!response.ok) throw new Error("No se pudo cargar el perfil.");
                 const data = await response.json();
                 setProfile(data);
-                // FIX: Se inicializa el formulario con todos los datos, incluyendo la foto
+
                 setEditFormData({ 
                     full_name: data.full_name || '', 
                     phone_number: data.phone_number || '',
@@ -85,12 +85,12 @@ export const ProfilePage: React.FC = () => {
             const response = await fetch(`${API_BASE_URL}/users/me`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify(editFormData), // El formulario ya incluye la URL de la foto
+                body: JSON.stringify(editFormData),
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.detail || "No se pudo actualizar el perfil.");
             
-            await fetchUserFromContext(); // Esto actualiza el contexto global (y por ende el profile local)
+            await fetchUserFromContext();
             
             setSuccess("¡Perfil actualizado con éxito!");
             setIsEditing(false);
@@ -117,7 +117,7 @@ export const ProfilePage: React.FC = () => {
             const data = await response.json();
             if (!response.ok) throw new Error(data.detail || "No se pudo enviar la solicitud.");
             
-            await fetchUserFromContext(); // Actualizamos el contexto
+            await fetchUserFromContext();
             
             setSuccess("¡Solicitud para ser dueño enviada con éxito! El administrador la revisará pronto.");
         } catch (err: any) {

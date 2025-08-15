@@ -1,4 +1,4 @@
-// src/context/AuthProvider.tsx
+
 
 import React, { useState, ReactNode, useEffect, useCallback } from 'react';
 import { AuthContext } from './AuthContext';
@@ -62,8 +62,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return <div style={{textAlign: 'center', padding: '3rem', fontSize: '1.2rem'}}>Cargando sesión...</div>;
     }
 
-    // --- LÍNEA CORREGIDA ---
-    // Asegúrate de que aquí diga "AuthContext.Provider"
+
+
     return (
         <AuthContext.Provider value={{ token, user, isAdmin, login, logout, fetchUser }}>
             {children}

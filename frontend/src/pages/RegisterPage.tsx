@@ -1,9 +1,9 @@
-// src/pages/RegisterPage.tsx
+
 
 import React, { useState } from 'react';
 import { Box, Button, Checkbox, CssBaseline, Divider, FormControlLabel, FormLabel, FormControl, Link, TextField, Typography, Stack, Card, Alert } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { useGoogleLogin } from '@react-oauth/google'; // Se importa el hook de Google
+import { useGoogleLogin } from '@react-oauth/google';
 
 import { Page } from '@/types';
 import { API_BASE_URL } from '@/services/api';
@@ -31,7 +31,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ navigateTo }) => {
     const [success, setSuccess] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
-    // --- LÓGICA PARA REGISTRO/LOGIN SOCIAL ---
+
     const handleBackendLogin = async (token: string, provider: 'google' | 'facebook') => {
         setIsLoading(true);
         setError(null);
@@ -58,7 +58,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ navigateTo }) => {
         onError: () => setError('El registro con Google falló.'),
     });
 
-    // --- LÓGICA PARA REGISTRO TRADICIONAL ---
+
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setError(null);
@@ -118,7 +118,7 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ navigateTo }) => {
                     </Box>
                     <Divider sx={{ my: 2 }}>o</Divider>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                        {/* El botón de Google ahora llama a la función googleLogin */}
+                        {}
                         <Button fullWidth variant="outlined" onClick={() => googleLogin()} startIcon={<GoogleIcon />}>
                             Registrarse con Google
                         </Button>

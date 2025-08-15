@@ -1,4 +1,4 @@
-// src/theme/themePrimitives.ts
+
 
 import { createTheme, alpha, Shadows } from '@mui/material/styles';
 

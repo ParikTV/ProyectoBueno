@@ -1,4 +1,4 @@
-/* src/styles/AdminPage.module.css */
+
 
 .pageContainer {
   max-width: 1200px;
@@ -15,16 +15,16 @@
   padding-bottom: 1rem;
 }
 
-/* --- ESTILO CORREGIDO PARA LOS FORMULARIOS --- */
+
 .formGrid {
   display: grid;
-  grid-template-columns: 1fr; /* Siempre una columna */
+  grid-template-columns: 1fr; 
   gap: 2rem;
-  margin: 0 auto 3rem auto; /* Centra el grid y le da margen inferior */
-  max-width: 700px; /* Limita el ancho máximo para que no se vea muy estirado */
+  margin: 0 auto 3rem auto; 
+  max-width: 700px; 
 }
 
-/* Título dentro de los formularios del grid */
+
 .formTitle {
     font-size: 1.25rem;
     font-weight: 600;
@@ -34,7 +34,7 @@
     border-bottom: 1px solid #f3f4f6;
 }
 
-/* --- Títulos de sección --- */
+
 .sectionTitle {
   font-size: 1.75rem;
   font-weight: 700;
@@ -45,13 +45,13 @@
   padding-bottom: 0.75rem;
 }
 
-/* --- Contenedor de las listas de solicitudes --- */
+
 .serviceList {
   display: grid;
   gap: 1.5rem;
 }
 
-/* --- Estilos para las tarjetas de solicitud --- */
+
 .serviceCard {
   background-color: white;
   border-radius: 0.75rem;
@@ -110,7 +110,7 @@
   font-size: 1.125rem;
 }
 
-/* --- Estilos del Modal (sin cambios) --- */
+
 .modalBackdrop {
     position: fixed;
     top: 0;

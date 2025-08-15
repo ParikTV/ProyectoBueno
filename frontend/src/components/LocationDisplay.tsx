@@ -1,4 +1,4 @@
-// frontend/src/components/LocationDisplay.tsx
+
 
 import React, { useState, useEffect } from 'react';
 import { GoogleMap, Marker } from '@react-google-maps/api';
@@ -26,7 +26,7 @@ export const LocationDisplay: React.FC<LocationDisplayProps> = ({ address }) => 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Asegúrate de que la API de Google esté cargada antes de intentar usarla.
+
     if (!window.google || !window.google.maps) {
       console.warn("La API de Google Maps aún no está disponible.");
       return;
@@ -42,7 +42,7 @@ export const LocationDisplay: React.FC<LocationDisplayProps> = ({ address }) => 
           const location = results[0].geometry.location;
           setPosition({ lat: location.lat(), lng: location.lng() });
         } else {
-          // Si falla, guardamos el mensaje de error para mostrarlo.
+
           console.error(`La geocodificación falló: ${status}`);
           setError(`No se pudo encontrar la dirección en el mapa. (Error: ${status})`);
           setPosition(null);
@@ -84,5 +84,5 @@ export const LocationDisplay: React.FC<LocationDisplayProps> = ({ address }) => 
     );
   }
 
-  return null; // No se muestra nada si no hay ni posición ni error
+  return null;
 };

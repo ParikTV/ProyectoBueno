@@ -1,4 +1,4 @@
-// src/components/ListingCard.tsx
+
 
 import { Card, CardActionArea, CardMedia, CardContent, Typography, Box, Rating } from '@mui/material';
 import { motion, Variants } from 'framer-motion';
@@ -17,10 +17,10 @@ const cardVariants: Variants = {
 };
 
 const ListingCard = ({ business, onViewDetails }: ListingCardProps) => {
-  const averageRating = 4.5; // Simulado
+  const averageRating = 4.5;
 
-  // FIX: Se usa la propiedad correcta 'logo_url' que viene de la API.
-  // También se incluye una imagen de respaldo por si 'logo_url' está vacío.
+
+
   const imageUrl = business.logo_url || 'https://via.placeholder.com/300x180.png?text=Sin+Imagen';
 
   return (
@@ -41,7 +41,7 @@ const ListingCard = ({ business, onViewDetails }: ListingCardProps) => {
             height="180"
             image={imageUrl}
             alt={`Imagen de ${business.name}`}
-            // Agregamos un pequeño estilo para evitar que la imagen de respaldo se vea mal
+
             sx={{ objectFit: 'cover' }}
           />
 

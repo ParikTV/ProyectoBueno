@@ -1,8 +1,8 @@
-// src/theme/AppTheme.tsx
+
 
 import * as React from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-// FIX: Importamos todas las personalizaciones
+
 import { inputsCustomizations } from './customizations/inputs';
 import { dataDisplayCustomizations } from './customizations/dataDisplay';
 import { feedbackCustomizations } from './customizations/feedback';
@@ -25,7 +25,7 @@ export default function AppTheme({ children }: AppThemeProps) {
       typography,
       shadows,
       shape,
-      // FIX: Añadimos las personalizaciones al tema
+
       components: {
         ...inputsCustomizations,
         ...dataDisplayCustomizations,

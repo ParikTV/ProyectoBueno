@@ -1,4 +1,4 @@
-// src/pages/ReviewsSection.tsx
+
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { API_BASE_URL } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,7 +19,7 @@ import {
 import ReviewsIcon from '@mui/icons-material/Reviews';
 import StarIcon from '@mui/icons-material/Star';
 
-/* ----- Tipos mínimos ------ */
+
 type ReviewReply = {
   text: string;
   role: 'owner' | 'admin';
@@ -45,7 +45,7 @@ type UserLite = {
   photo_url?: string;
 };
 
-/* ----- Utils ------ */
+
 const normalizeId = (x: any): string | null => {
   if (!x) return null;
   if (typeof x === 'string') return x;
@@ -64,7 +64,7 @@ const fetchJSON = async <T,>(url: string, init?: RequestInit): Promise<T> => {
   const res = await fetch(url, init);
   const text = await res.text();
   let data: any = {};
-  try { data = text ? JSON.parse(text) : {}; } catch { /* ignore */ }
+  try { data = text ? JSON.parse(text) : {}; } catch {  }
   if (!res.ok) {
     const detail = data?.detail ?? data?.message ?? text ?? 'Error';
     const msg =
@@ -84,7 +84,7 @@ const headersWithAuth = (token?: string | null, extra?: Record<string, string>) 
   return h;
 };
 
-/* ----- Componente ------ */
+
 export default function ReviewsSection({ businessId }: { businessId: string }) {
   const { token, user } = useAuth();
 
@@ -102,33 +102,33 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
   const ELIGIBILITY_URL = `${API_BASE_URL}/reviews/eligibility/${businessId}`;
   const MY_APPTS_URL = `${API_BASE_URL}/appointments/me`;
 
-  // Busca appointment_id: 1) /reviews/eligibility  2) /appointments/me (fallback)
+
   const resolveAppointmentId = useCallback(async (): Promise<string | null> => {
     if (!token) return null;
 
-    // 1) Intentar endpoint de elegibilidad
+
     try {
       const elig: any = await fetchJSON(ELIGIBILITY_URL, {
         headers: headersWithAuth(token),
       });
       if (elig?.eligible) {
         if (elig?.appointment_id) return String(elig.appointment_id);
-        // si no trae appointment_id, seguimos abajo
+
       } else {
         return null;
       }
     } catch {
-      // seguimos al fallback
+
     }
 
-    // 2) Fallback: última cita válida del usuario para ese negocio
+
     try {
       const myApps: any[] = await fetchJSON(MY_APPTS_URL, {
         headers: headersWithAuth(token),
       });
       const now = Date.now();
       const candidates = (myApps || []).filter((a) => {
-        // business puede venir como id, _id, $oid o incluso anidado en a.business
+
         const bid =
           normalizeId(a.business_id) ??
           normalizeId(a.business?.id) ??
@@ -158,7 +158,7 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
     }
   }, [businessId, token, ELIGIBILITY_URL, MY_APPTS_URL]);
 
-  // Cargar reseñas + usuarios
+
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -172,7 +172,7 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
         try {
           const ru = await fetch(`${API_BASE_URL}/users/${uid}`);
           if (ru.ok) entries[uid] = await ru.json();
-        } catch { /* ignore */ }
+        } catch {  }
       }));
       setUsersMap(entries);
     } catch (e: any) {
@@ -184,7 +184,7 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
 
   useEffect(() => { void load(); }, [load]);
 
-  // Resolver appointment_id al montar
+
   useEffect(() => {
     const run = async () => {
       const id = await resolveAppointmentId();
@@ -208,7 +208,7 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
     setError('');
 
     try {
-      // 🔁 Reintenta resolver appointment_id justo antes de enviar
+
       let apptId = appointmentId;
       if (!apptId) {
         apptId = await resolveAppointmentId();
@@ -226,7 +226,7 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
         headers,
         body: JSON.stringify({
           business_id: businessId,
-          appointment_id: apptId, // ← CLAVE
+          appointment_id: apptId,
           rating,
           comment: comment.trim(),
         }),
@@ -251,14 +251,14 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
         <Typography variant="h5" fontWeight={700}>Reseñas</Typography>
       </Stack>
 
-      {/* Header promedio */}
+      {}
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
         <Rating value={avg} precision={0.1} readOnly />
         <Typography fontWeight={700}>{avg.toFixed(1)}</Typography>
         <Typography color="text.secondary">· {reviews.length} reseña{reviews.length !== 1 ? 's' : ''}</Typography>
       </Stack>
 
-      {/* Formulario */}
+      {}
       <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
         <Stack spacing={1.5}>
           <Stack direction="row" alignItems="center" spacing={1}>
@@ -294,7 +294,7 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
         </Stack>
       </Paper>
 
-      {/* Listado */}
+      {}
       {loading ? (
         <Box sx={{ textAlign: 'center', py: 3 }}><CircularProgress size={22} /></Box>
       ) : reviews.length === 0 ? (

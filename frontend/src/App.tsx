@@ -1,6 +1,6 @@
-// src/App.tsx
 
-import { useState } from 'react'; // FIX: Se elimina la importación de 'React' que no se usa
+
+import { useState } from 'react';
 import { Box, Typography } from '@mui/material';
 
 import { MapProvider } from './context/MapProvider';

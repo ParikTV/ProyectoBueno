@@ -1,4 +1,4 @@
-// src/pages/AppointmentsPage.tsx
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { API_BASE_URL } from '@/services/api';
@@ -13,7 +13,7 @@ import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 
 const getApptId = (a: Appointment) => (a.id || (a as any)._id) as string;
 
-/* ======================= QR MODAL ======================= */
+
 const QrModal: React.FC<{ appointmentId: string; onClose: () => void }> = ({ appointmentId, onClose }) => {
   const { token } = useAuth();
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
@@ -54,7 +54,7 @@ const QrModal: React.FC<{ appointmentId: string; onClose: () => void }> = ({ app
   );
 };
 
-/* ========== DIÁLOGO PARA ENVIAR CORREO TRAS CANCELACIÓN ========== */
+
 const CancelEmailDialog: React.FC<{
   open: boolean;
   onClose: () => void;
@@ -110,7 +110,7 @@ const CancelEmailDialog: React.FC<{
   );
 };
 
-/* ======================= HELPERS DE ESTADO ======================= */
+
 function getVisualStatus(a: Appointment): { label: string; color: 'default' | 'success' | 'warning' } {
   if (a.status === 'cancelled') return { label: 'Cancelada', color: 'default' };
   const isPast = new Date(a.appointment_time).getTime() < Date.now();
@@ -118,7 +118,7 @@ function getVisualStatus(a: Appointment): { label: string; color: 'default' | 's
   return { label: 'Confirmada', color: 'success' };
 }
 
-/* ======================= TARJETA DE CITA ======================= */
+
 const AppointmentCard: React.FC<{
   appointment: Appointment;
   business?: Business;
@@ -229,7 +229,7 @@ const AppointmentCard: React.FC<{
   );
 };
 
-/* ======================= PÁGINA PRINCIPAL ======================= */
+
 export const AppointmentsPage: React.FC = () => {
   const { token, logout } = useAuth();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
