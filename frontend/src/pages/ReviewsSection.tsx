@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { API_BASE_URL } from '@/services/api';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,12 +12,10 @@ import {
   TextField,
   Button,
   Alert,
-  CircularProgress,
-  Divider,
+  CircularProgress
 } from '@mui/material';
 import ReviewsIcon from '@mui/icons-material/Reviews';
 import StarIcon from '@mui/icons-material/Star';
-
 
 type ReviewReply = {
   text: string;
@@ -42,9 +39,8 @@ type UserLite = {
   _id?: string;
   full_name?: string;
   email?: string;
-  photo_url?: string;
+  profile_picture_url?: string; 
 };
-
 
 const normalizeId = (x: any): string | null => {
   if (!x) return null;
@@ -84,7 +80,6 @@ const headersWithAuth = (token?: string | null, extra?: Record<string, string>) 
   return h;
 };
 
-
 export default function ReviewsSection({ businessId }: { businessId: string }) {
   const { token, user } = useAuth();
 
@@ -102,10 +97,8 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
   const ELIGIBILITY_URL = `${API_BASE_URL}/reviews/eligibility/${businessId}`;
   const MY_APPTS_URL = `${API_BASE_URL}/appointments/me`;
 
-
   const resolveAppointmentId = useCallback(async (): Promise<string | null> => {
     if (!token) return null;
-
 
     try {
       const elig: any = await fetchJSON(ELIGIBILITY_URL, {
@@ -113,14 +106,11 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
       });
       if (elig?.eligible) {
         if (elig?.appointment_id) return String(elig.appointment_id);
-
       } else {
         return null;
       }
     } catch {
-
     }
-
 
     try {
       const myApps: any[] = await fetchJSON(MY_APPTS_URL, {
@@ -128,7 +118,6 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
       });
       const now = Date.now();
       const candidates = (myApps || []).filter((a) => {
-
         const bid =
           normalizeId(a.business_id) ??
           normalizeId(a.business?.id) ??
@@ -158,7 +147,6 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
     }
   }, [businessId, token, ELIGIBILITY_URL, MY_APPTS_URL]);
 
-
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -184,7 +172,6 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
 
   useEffect(() => { void load(); }, [load]);
 
-
   useEffect(() => {
     const run = async () => {
       const id = await resolveAppointmentId();
@@ -208,7 +195,6 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
     setError('');
 
     try {
-
       let apptId = appointmentId;
       if (!apptId) {
         apptId = await resolveAppointmentId();
@@ -262,7 +248,12 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
       <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
         <Stack spacing={1.5}>
           <Stack direction="row" alignItems="center" spacing={1}>
-            <Avatar src={user?.photo_url} alt={user?.full_name || user?.email || 'Usuario'} />
+            <Avatar
+              src={user?.profile_picture_url ?? undefined}
+              alt={user?.full_name || user?.email || 'Usuario'}
+            >
+              {(user?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
+            </Avatar>
             <Typography fontWeight={600}>{user?.full_name || user?.email || 'Tú'}</Typography>
             {appointmentId ? (
               <Chip size="small" label="Puedes opinar" color="success" variant="outlined" sx={{ ml: 'auto' }} />
@@ -308,7 +299,12 @@ export default function ReviewsSection({ businessId }: { businessId: string }) {
             return (
               <Paper key={rid} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
                 <Stack direction="row" spacing={1.5}>
-                  <Avatar src={u?.photo_url} alt={u?.full_name || 'Usuario'} />
+                  <Avatar
+                    src={u?.profile_picture_url ?? undefined}
+                    alt={u?.full_name || 'Usuario'}
+                  >
+                    {(u?.full_name || u?.email || 'U')?.charAt(0).toUpperCase()}
+                  </Avatar>
                   <Box sx={{ flex: 1 }}>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <Typography fontWeight={700}>{u?.full_name || u?.email || 'Usuario'}</Typography>

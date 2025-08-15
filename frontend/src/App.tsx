@@ -16,7 +16,9 @@ import { BusinessDetailsPage } from '@/pages/BusinessDetailsPage';
 import { OwnerAppointmentsPage } from '@/pages/OwnerAppointmentsPage';
 import { Page } from '@/types';
 
-export type ExtendedPage = Page | 'ownerDashboard' | 'businessDetails' | 'ownerAppointments';
+export type ExtendedPage = Page | 'ownerDashboard' | 'businessDetails' | 'ownerAppointments'| 'home'
+  | 'login'
+  | 'register' | 'appointments'| 'profile' | 'admin';
 
 export default function App() {
     const [currentPage, setCurrentPage] = useState<ExtendedPage>('home');

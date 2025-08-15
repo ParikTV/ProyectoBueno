@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { API_BASE_URL } from '@/services/api';
 import { Business, Appointment, Employee } from '@/types';
@@ -19,7 +18,6 @@ import PersonIcon from '@mui/icons-material/Person';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import StarIcon from '@mui/icons-material/Star';
 import ReviewsIcon from '@mui/icons-material/Reviews';
-
 
 const safeId = (obj: { id?: string; _id?: string } | null | undefined) =>
   (obj?.id as string) || (obj?._id as string) || '';
@@ -49,10 +47,9 @@ type UserLite = {
   _id?: string;
   full_name?: string;
   email?: string;
-  photo_url?: string;
+  profile_picture_url?: string; 
   role?: string;
 };
-
 
 const ConfirmationDialog: React.FC<{
   appointment: Appointment;
@@ -109,7 +106,6 @@ const ConfirmationDialog: React.FC<{
     </Dialog>
   );
 };
-
 
 const BookingModal: React.FC<{
   business: Business;
@@ -315,7 +311,6 @@ const BookingModal: React.FC<{
   );
 };
 
-
 const ReviewsSection: React.FC<{
   businessId: string;
   canReview: boolean;
@@ -361,20 +356,17 @@ const ReviewsSection: React.FC<{
   const resolveAppointmentId = useCallback(async () => {
     if (!token) { setAppointmentId(null); return; }
 
-
     try {
       const elig = await fetchJSON(`${API_BASE_URL}/reviews/eligibility/${businessId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (elig?.eligible) {
         if (elig?.appointment_id) { setAppointmentId(elig.appointment_id); return; }
-
       } else {
         setAppointmentId(null);
         return;
       }
     } catch {  }
-
 
     try {
       const myApps: any[] = await fetchJSON(`${API_BASE_URL}/appointments/me`, {
@@ -416,7 +408,7 @@ const ReviewsSection: React.FC<{
           const ru = await fetch(`${API_BASE_URL}/users/${uid}`);
           if (ru.ok) {
             const u = await ru.json();
-            entries[uid] = u as UserLite;
+            entries[uid] = u as UserLite; 
           }
         } catch {  }
       }));
@@ -490,7 +482,12 @@ const ReviewsSection: React.FC<{
         <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
           <Stack spacing={1.5}>
             <Stack direction="row" alignItems="center" spacing={1}>
-              <Avatar src={user?.photo_url} alt={user?.full_name || user?.email || 'Usuario'} />
+              <Avatar
+                src={user?.profile_picture_url ?? undefined} // <-- FIX
+                alt={user?.full_name || user?.email || 'Usuario'}
+              >
+                {(user?.full_name || user?.email || 'U').charAt(0).toUpperCase()}
+              </Avatar>
               <Typography fontWeight={600}>{user?.full_name || user?.email || 'Tú'}</Typography>
               <Chip size="small" label="Puedes opinar" color="success" variant="outlined" sx={{ ml: 'auto' }} />
             </Stack>
@@ -535,7 +532,12 @@ const ReviewsSection: React.FC<{
             return (
               <Paper key={rid} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
                 <Stack direction="row" spacing={1.5}>
-                  <Avatar src={u?.photo_url} alt={u?.full_name || 'Usuario'} />
+                  <Avatar
+                    src={u?.profile_picture_url ?? undefined} 
+                    alt={u?.full_name || 'Usuario'}
+                  >
+                    {(u?.full_name || u?.email || 'U')?.charAt(0).toUpperCase()}
+                  </Avatar>
                   <Box sx={{ flex: 1 }}>
                     <Stack direction="row" alignItems="center" spacing={1}>
                       <Typography fontWeight={700}>{u?.full_name || u?.email || 'Usuario'}</Typography>
@@ -576,7 +578,6 @@ const ReviewsSection: React.FC<{
   );
 };
 
-
 interface BusinessDetailsPageProps {
   businessId: string;
   navigateTo: (page: ExtendedPage) => void;
@@ -589,7 +590,6 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [confirmedAppointment, setConfirmedAppointment] = useState<Appointment | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
 
   const [canReview, setCanReview] = useState(false);
 
@@ -607,7 +607,6 @@ export const BusinessDetailsPage: React.FC<BusinessDetailsPageProps> = ({ busine
   }, [businessId]);
 
   useEffect(() => { void fetchDetails(); }, [fetchDetails]);
-
 
   useEffect(() => {
     const run = async () => {

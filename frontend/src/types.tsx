@@ -1,3 +1,4 @@
+
 export type ScheduleDay = {
   is_active: boolean;
   open_time: string;
@@ -29,18 +30,16 @@ export interface Business {
   rating_count?: number;    
 }
 
-
 export interface Appointment {
   id?: string; _id?: string;
   user_id: string;
   business_id: string;
-  appointment_time: string; 
+  appointment_time: string;
   status: 'confirmed' | 'cancelled';
   employee_id?: string | null;
 }
 
-
-export type Category = { id: string; name: string };
+export type Category = { id?: string; _id?: string; name: string };
 
 export type Employee = {
   id: string;
@@ -50,10 +49,11 @@ export type Employee = {
   roles?: string[];
   schedule?: Schedule;
 };
+
 export interface ReviewReply {
   author_role: 'owner' | 'admin';
   content: string;
-  created_at: string; 
+  created_at: string;
 }
 
 export interface Review {
@@ -67,3 +67,37 @@ export interface Review {
   created_at: string;      
   replies?: ReviewReply[];
 }
+
+
+export interface OwnerRequest {
+  business_name: string;
+  business_description: string;
+  address: string;
+  logo_url?: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface UserResponse {
+  id?: string;
+  _id?: string;
+  email: string;
+  full_name?: string | null;
+  phone_number?: string | null;
+  role: 'usuario' | 'dueño' | 'admin';
+  owner_request?: OwnerRequest | null;
+  profile_picture_url?: string | null;
+  created_at?: string; 
+}
+
+export interface CategoryRequest {
+  id?: string;           
+  _id?: string;          
+  owner_id: string;
+  category_name: string;
+  reason: string;
+  evidence_url?: string | null;
+  status: 'pending' | 'approved' | 'rejected';
+  created_at: string;    
+}
+
+export type Page = 'home' | 'login' | 'register';
